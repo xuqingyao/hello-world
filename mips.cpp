@@ -41,8 +41,8 @@ void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile;
-	infile.open("10.s");
+	std::ifstream infile(argv[1]);
+	//infile.open("10.s");
 	std::string str, line;
 	if (infile) {
 		while (getline(infile, line)) {
@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	infile.close();
-	freopen("10.in", "r", stdin);
+	//freopen("10.in", "r", stdin);
 	//std::cout << dataLine << ' ' << textLine << std::endl;
 	for (; currentLine < dataLine;) {
 		processData();
