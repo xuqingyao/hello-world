@@ -61,11 +61,9 @@ int transToInt(std::string str) {
 		return -ans;
 	return ans;
 }
-
 char transToChar(std::string str) {
 	return str[0];
 }
-
 short transToShort(std::string str) {
 	short i = 0, ans;
 	if (str[0] == '-')
@@ -81,95 +79,29 @@ short transToShort(std::string str) {
 }
 
 struct textGroup {
-	std::string s[4];
-	int n;
-	int label;
-	bool type;//是否有数字
-	bool flag;//mul/div类型
+	int Rdest, Rscr, Scr, address;
+	int type;
+	int command;
+	std::string label;
 	textGroup() {
-		for (int i = 0; i < 4; ++i) {
-			s[i] = "";
-		}
-		n = 0;
-		label = 0;
-		type = 0;
-		flag = 0;
+		Rdest = Rscr = Scr = address  = command = -1;
+		type = 0;//type == 1 —— number | type == 0 —— Register | type == 2 —— mul/div (3, n) | type == 3 —— mul/div (3, r) | 
+		label = "";
 	}
-	~textGroup() {}
+	~textGroup(){}
 };
-/*int transToLabel(std::string &str) {
-	if (str == ".align") return 1;
-	else if (str == ".ascii") return 2;
-	else if (str == ".asciiz") return 3;
-	else if (str == ".byte") return 4;
-	else if (str == ".half") return 5;
-	else if (str == ".word") return 6;
-	else if (str == ".space") return 7;
-	else if (str == "main") return 8;
-	else if (str == "add") return 9;
-	else if (str == "addu") return 10;
-	else if (str == "addiu") return 11;
-	else if (str == "sub") return 12;
-	else if (str == "subu") return 13;
-	else if (str == "mul") return 14;
-	else if (str == "mulu") return 15;
-	else if (str == "div") return 16;
-	else if (str == "divu") return 17;
-	else if (str == "xor") return 18;
-	else if (str == "xoru") return 19;
-	else if (str == "neg") return 20;
-	else if (str == "negu") return 21;
-	else if (str == "rem") return 22;
-	else if (str == "remu") return 23;
-	else if (str == "seq") return 24;
-	else if (str == "sge") return 25;
-	else if (str == "sgt") return 26;
-	else if (str == "sle") return 27;
-	else if (str == "slt") return 28;
-	else if (str == "sne") return 29;
-	else if (str == "sb") return 30;
-	else if (str == "sh") return 31;
-	else if (str == "sw") return 32;
-	else if (str == "move") return 33;
-	else if (str == "mfhi") return 34;
-	else if (str == "mflo") return 35;
-	else if (str == "nop") return 36;
-	else if (str == "syscall") return 37;
-	else if (str == "b") return 38;
-	else if (str == "beq") return 39;
-	else if (str == "bne") return 40;
-	else if (str == "bge") return 41;
-	else if (str == "ble") return 42;
-	else if (str == "bgt") return 43;
-	else if (str == "blt") return 44;
-	else if (str == "beqz") return 45;
-	else if (str == "bnez") return 46;
-	else if (str == "blez") return 47;
-	else if (str == "bgez") return 48;
-	else if (str == "bgtz") return 49;
-	else if (str == "bltz") return 50;
-	else if (str == "j") return 51;
-	else if (str == "jr") return 52;
-	else if (str == "jal") return 53;
-	else if (str == "jalr") return 54;
-	else if (str == "li") return 55;
-	else if (str == "la") return 56;
-	else if (str == "lb") return 57;
-	else if (str == "lh") return 58;
-	else if (str == "lw") return 59;
-	else return 0;
-}*/
+
 struct dataGroup {
 	std::string s[2];
 	int *n;
-	int num, Size, label;
+	int num, Size, command;
 	dataGroup() {
 		s[0] = s[1] = "";
 		n = new int[10];
 		for (int i = 0; i < 10; ++i) {
 			n[i] = 0;
 		}
-		label = 0;
+		command = 0;
 		num = 0;
 		Size = 10;
 	}
@@ -205,8 +137,9 @@ void processText();
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
 	std::ifstream infile(argv[1]);
-	//infile.open("4.s");
+	//nfile.open("4.s");
 	std::string str, line, tmp;
+	std::string s[3];
 	initKey();
 	initLabel();
 	if (infile) {
@@ -227,10 +160,9 @@ int main(int argc, char* argv[]) {
 				struct dataGroup l;
 				l.s[0] = str;
 				if (str[0] == '.')
-					l.label = Label[str];
+					l.command = Label[str];
 				else 
-					l.label = 0;
-				//std::cout << l.label << std::endl;
+					l.command = 0;
 				if (str == ".ascii" || str == ".asciiz")
 					l.s[1] = scanner.nextToken();
 				else {
@@ -243,27 +175,99 @@ int main(int argc, char* argv[]) {
 				dataLine++;
 			}
 			else if (textStore) {
+				s[0] = s[1] = s[2] = "";
 				struct textGroup l;
-				l.s[0] = str;
 				if (str[0] == '_') {
-					l.label = 0;
-					textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
+					l.command = 0;
+					textnum.insert(std::map<std::string, int> ::value_type(str, textLine));
 				}
 				else
-					l.label = Label[str];
-				//std::cout << l.label << std::endl;
-				int i = 1;
+					l.command = Label[str];
+				int i = 0;
 				while (scanner.hasMoreToken()) {
-					tmp = scanner.nextToken();
-					if (isNumber(tmp)) {
-						l.n = transToInt(tmp);
+					s[i++] = scanner.nextToken();
+				}
+				if ((l.command >= 9 && l.command <= 13) || (l.command >= 18 && l.command <= 29)) {
+					l.Rdest = keyword[s[0]];
+					l.Rscr = keyword[s[1]];
+					if (s[2] == ""){}
+					else if (isNumber(s[2])) {
 						l.type = 1;
+						l.Scr = transToInt(s[2]);
+					}
+					else {
+						l.Scr = keyword[s[2]];
+					}
+				}
+				else if (l.command >= 14 && l.command <= 17) {
+					if (i == 3) {
+						l.Rdest = keyword[s[0]];
+						l.Rscr = keyword[s[1]];
+						if (isNumber(s[2])) {
+							l.type = 2;
+							l.Scr = transToInt(s[2]);
+						}
+						else {
+							l.type = 3;
+							l.Scr = keyword[s[2]];
+						}
+					}
+					else {
+						l.Rdest = keyword[s[0]];
+						if (isNumber(s[1])) {
+							l.type = 4;
+							l.Scr = transToInt(s[1]);
+						}
+						else {
+							l.type = 5;
+							l.Scr = keyword[s[1]];
+						}
+					}
+				}
+				else if (l.command >= 39 && l.command <= 44) {
+					l.Rscr = keyword[s[0]];
+					if (isNumber(s[1])) {
+						l.type = 1;
+						l.Scr = transToInt(s[1]);
 					}
 					else
-						l.s[i++] = tmp;
+						l.Scr = keyword[s[1]];
+					l.label = s[2];
 				}
-				if ((l.type && i == 3) || i == 4)
-					l.flag = 1;
+				else if (l.command == 38 || l.command == 51 || l.command == 53) {
+					l.label = s[0];
+				}
+				else if (l.command == 52 || l.command == 54) {
+					l.Rscr = keyword[s[0]];
+				}
+				else if (l.command >= 45 && l.command <= 50) {
+					l.Rscr = keyword[s[0]];
+					l.label = s[1];
+				}
+				else if ((l.command >= 30 && l.command <= 32) || (l.command >= 56 && l.command <= 59)) {
+					l.Rdest = keyword[s[0]];
+					if (i == 3) {
+						l.type = 6;
+						l.address = transToInt(s[1]);
+						l.Rscr = keyword[s[2]];
+					}
+					else {
+						l.type = 7;
+						l.label = s[1];
+					}
+				}
+				else if (l.command == 55) {
+					l.Rdest = keyword[s[0]];
+					l.Scr = transToInt(s[1]);
+				}
+				else if (l.command >= 33 && l.command <= 35) {
+					if (i == 2) {
+						l.Rdest = keyword[s[0]];
+						l.Rscr = keyword[s[1]];
+					}
+					else
+						l.Rdest = keyword[s[0]];
+				}
 				text1.push_back(l);
 				//if (str[0] == '_')
 					//textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
@@ -290,38 +294,37 @@ void processData() {
 	int i1;
 	short s1;
 	char c1;
-	//std::cout << p.label << std::endl;
-	if (p.label == 1){
+	if (p.command == 1){
 		memo.align(p.n[0]);
 		datapos = memo.getPos();
 	}
-	else if (p.label == 2){
+	else if (p.command == 2){
 		memo.ascii(p.s[1]);
 		datapos = memo.getPos();
 	}
-	else if (p.label == 3){
+	else if (p.command == 3){
 		memo.asciiz(p.s[1]);
 		datapos = memo.getPos();
 	}
-	else if (p.label == 4){
+	else if (p.command == 4){
 		for (int i = 0; i < p.num; ++i) {
 			memo.byte(p.n[i]);
 		}
 		datapos = memo.getPos();
 	}
-	else if (p.label == 5) {
+	else if (p.command == 5) {
 		for (int i = 0; i < p.num; ++i) {
 			memo.half(p.n[i]);
 		}
 		datapos = memo.getPos();
 	}
-	else if (p.label == 6){
+	else if (p.command == 6){
 		for (int i = 0; i < p.num; ++i) {
 			memo.word(p.n[i]);
 		}
 		datapos = memo.getPos();
 	}
-	else if (p.label == 7){
+	else if (p.command == 7){
 		memo.space(p.n[0]);
 		datapos = memo.getPos();
 	}
@@ -336,544 +339,357 @@ void processText() {
 	int i1, i2;
 	char c1;
 	short s1;
-	//std::cout << p.label << std::endl;
-	if (p.label == 8) {
+	if (p.command == 8) {
 		mainbegin = true;
 		currentLine++;
 	}
 	else if (mainbegin) {
-		if (p.label == 9) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		if (p.command == 9) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] + p.n;
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] + Register[keyword[tmp3]];
-			}
+				Register[p.Rdest] = Register[p.Rscr] + p.Scr;
+			else
+				Register[p.Rdest] = Register[p.Rscr] + Register[p.Scr];
 		}
-		else if (p.label == 10) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 10) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
+			else
+				Register[p.Rdest] = Register[p.Rscr] + abs(Register[p.Scr]);
 		}
-		else if (p.label == 11) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(p.n);
+		else if (p.command == 11) {
+			Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
 		}
-		else if (p.label == 12) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 12) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] - p.n;
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] - Register[keyword[tmp3]];
-			}
+				Register[p.Rdest] = Register[p.Rscr] - p.Scr;
+			else
+				Register[p.Rdest] = Register[p.Rscr] - Register[p.Scr];
 		}
-		else if (p.label == 13) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 13) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] - abs(p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] - abs(Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = Register[p.Rscr] - abs(p.Scr);
+			else
+				Register[p.Rdest] = Register[p.Rscr] - abs(Register[p.Scr]);
 		}
-		else if (p.label == 14) {
-			tmp1 = p.s[1];
-			//std::cout << p.flag << ' ';
-			if (p.flag) {
-				tmp2 = p.s[2];
-				if (p.type)
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] * p.n;
-				else {
-					tmp3 = p.s[3];
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] * Register[keyword[tmp3]];
-				}
-				//std::cout << Register[keyword[tmp1]];
+		else if (p.command == 14) {
+			if (p.type == 2)
+				Register[p.Rdest] = Register[p.Rscr] * p.Scr;
+			else if (p.type == 3)
+				Register[p.Rdest] = Register[p.Rscr] * Register[p.Scr];
+			else if (p.type == 4) {
+				Register[32] = (Register[p.Rdest] * p.Scr) / 2 ^ 32;
+				Register[33] = (Register[p.Rdest] * p.Scr) % 2 ^ 32;
 			}
 			else {
-				if (p.type) {
-					Register[32] = (Register[keyword[tmp1]] * p.n) / 2 ^ 32;
-					Register[33] = (Register[keyword[tmp1]] * p.n) % 2 ^ 32;
-				}
-				else {
-					tmp2 = p.s[2];
-					Register[32] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) / 2 ^ 32;
-					Register[33] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) % 2 ^ 32;
-				}
+				Register[32] = (Register[p.Rdest] * Register[p.Scr]) / 2 ^ 32;
+				Register[33] = (Register[p.Rdest] * Register[p.Scr]) % 2 ^ 32;
 			}
 		}
-		else if (p.label == 15) {
-			tmp1 = p.s[1];
-			//std::cout << p.flag << ' ';
-			if (p.flag) {
-				tmp2 = p.s[2];
-				if (p.type)
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] * abs(p.n);
-				else {
-					tmp3 = p.s[3];
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] * abs(Register[keyword[tmp3]]);
-				}
-				//std::cout << Register[keyword[tmp1]];
+		else if (p.command == 15) {
+			if (p.type == 2)
+				Register[p.Rdest] = Register[p.Rscr] * abs(p.Scr);
+			else if (p.type == 3)
+				Register[p.Rdest] = Register[p.Rscr] * abs(Register[p.Scr]);
+			else if (p.type == 4) {
+				Register[32] = (Register[p.Rdest] * abs(p.Scr)) / 2 ^ 32;
+				Register[33] = (Register[p.Rdest] * abs(p.Scr)) % 2 ^ 32;
 			}
 			else {
-				if (p.type) {
-					Register[32] = (Register[keyword[tmp1]] * abs(p.n)) / 2 ^ 32;
-					Register[33] = (Register[keyword[tmp1]] * abs(p.n)) % 2 ^ 32;
-				}
-				else {
-					tmp2 = p.s[2];
-					Register[32] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) / 2 ^ 32;
-					Register[33] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) % 2 ^ 32;
-				}
+				Register[32] = (Register[p.Rdest] * abs(Register[p.Scr])) / 2 ^ 32;
+				Register[33] = (Register[p.Rdest] * abs(Register[p.Scr])) % 2 ^ 32;
 			}
 		}
-		else if (p.label == 16) {
-			tmp1 = p.s[1];
-			if (p.flag) {
-				tmp2 = p.s[2];
-				if (p.type)
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] / p.n;
-				else {
-					tmp3 = p.s[3];
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] / Register[keyword[tmp3]];
-				}
+		else if (p.command == 16) {
+			if (p.type == 2)
+				Register[p.Rdest] = Register[p.Rscr] / p.Scr;
+			else if (p.type == 3)
+				Register[p.Rdest] = Register[p.Rscr] / Register[p.Scr];
+			else if (p.type == 4){
+				Register[32] = Register[p.Rdest] % p.Scr;
+				Register[33] = Register[p.Rdest] / p.Scr;
 			}
 			else {
-				if (p.type) {
-					Register[32] = Register[keyword[tmp1]] % p.n;
-					Register[33] = Register[keyword[tmp1]] / p.n;
-				}
-				else {
-					tmp2 = p.s[2];
-					Register[32] = Register[keyword[tmp1]] % Register[keyword[tmp2]];
-					Register[33] = Register[keyword[tmp1]] / Register[keyword[tmp2]];
-				}
+				Register[32] = Register[p.Rdest] % Register[p.Scr];
+				Register[33] = Register[p.Rdest] / Register[p.Scr];
 			}
 		}
-		else if (p.label == 17) {
-			tmp1 = p.s[1];
-			if (p.flag) {
-				tmp2 = p.s[2];
-				if (p.type)
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] / abs(p.n);
-				else {
-					tmp3 = p.s[3];
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] / abs(Register[keyword[tmp3]]);
-				}
+		else if (p.command == 17) {
+			if (p.type == 2)
+				Register[p.Rdest] = Register[p.Rscr] / abs(p.Scr);
+			else if (p.type == 3)
+				Register[p.Rdest] = Register[p.Rscr] / abs(Register[p.Scr]);
+			else if (p.type == 4) {
+				Register[32] = Register[p.Rdest] % abs(p.Scr);
+				Register[33] = Register[p.Rdest] / abs(p.Scr);
 			}
 			else {
-				if (p.type) {
-					Register[32] = Register[keyword[tmp1]] % abs(p.n);
-					Register[33] = Register[keyword[tmp1]] / abs(p.n);
-				}
-				else {
-					tmp2 = p.s[2];
-					Register[32] = Register[keyword[tmp1]] % abs(Register[keyword[tmp2]]);
-					Register[33] = Register[keyword[tmp1]] / abs(Register[keyword[tmp2]]);
-				}
+				Register[32] = Register[p.Rdest] % abs(Register[p.Scr]);
+				Register[33] = Register[p.Rdest] / abs(Register[p.Scr]);
 			}
 		}
-		else if (p.label == 18) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 18) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ p.n;
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ Register[keyword[tmp3]];
-			}
+				Register[p.Rdest] = Register[p.Rscr] ^ p.Scr;
+			else
+				Register[p.Rdest] = Register[p.Rscr] ^ Register[p.Scr];
 		}
-		else if (p.label == 19) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 19) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ abs(p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ abs(Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = Register[p.Rscr] ^ abs(p.Scr);
+			else
+				Register[p.Rdest] = Register[p.Rscr] ^ abs(Register[p.Scr]);
 		}
-		else if (p.label == 20) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			Register[keyword[tmp1]] = -Register[keyword[tmp2]];
+		else if (p.command == 20) {
+			Register[p.Rdest] = -Register[p.Rscr];
 		}
-		else if (p.label == 21) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			Register[keyword[tmp1]] = ~abs(Register[keyword[tmp2]]);
+		else if (p.command == 21) {
+			Register[p.Rdest] = ~abs(Register[p.Rscr]);
 		}
-		else if (p.label == 22) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 22) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] % p.n;
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] % Register[keyword[tmp3]];
-			}
+				Register[p.Rdest] = Register[p.Rscr] % p.Scr;
+			else
+				Register[p.Rdest] = Register[p.Rscr] % Register[p.Scr];
 		}
-		else if (p.label == 23) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 23) {
 			if (p.type)
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] % abs(p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] % abs(Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = Register[p.Rscr] % abs(p.Scr);
+			else
+				Register[p.Rdest] = Register[p.Rscr] % abs(Register[p.Scr]);
 		}
-		else if (p.label == 24) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 24) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] == p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] == Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] == p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] == Register[p.Scr]);
 		}
-		else if (p.label == 25) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 25) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] >= p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] >= Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] >= p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] >= Register[p.Scr]);
 		}
-		else if (p.label == 26) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 26) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] > p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] > Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] > p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] > Register[p.Scr]);
 		}
-		else if (p.label == 27) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 27) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] <= p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] <= Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] <= p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] <= Register[p.Scr]);
 		}
-		else if (p.label == 28) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 28) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] < p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] < Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] < p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] < Register[p.Scr]);
 		}
-		else if (p.label == 29) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
+		else if (p.command == 29) {
 			if (p.type)
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] != p.n);
-			else {
-				tmp3 = p.s[3];
-				Register[keyword[tmp1]] = (Register[keyword[tmp2]] != Register[keyword[tmp3]]);
-			}
+				Register[p.Rdest] = (Register[p.Rscr] != p.Scr);
+			else
+				Register[p.Rdest] = (Register[p.Rscr] != Register[p.Scr]);
 		}
-		else if (p.label == 30) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 30) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else
-				i2 = memory[tmp2];
-			memo.save(i2, 1, Register[keyword[tmp1]]);
+				i2 = memory[p.label];
+			memo.save(i2, 1, Register[p.Rdest]);
 		}
-		else if (p.label == 31) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 31) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else
-				i2 = memory[tmp2];
-			memo.save(i2, 2, Register[keyword[tmp1]]);
+				i2 = memory[p.label];
+			memo.save(i2, 2, Register[p.Rdest]);
 		}
-		else if (p.label == 32) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 32) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else
-				i2 = memory[tmp2];
-			memo.save(i2, 4, Register[keyword[tmp1]]);
+				i2 = memory[p.label];
+			memo.save(i2, 4, Register[p.Rdest]);
 		}
-		else if (p.label == 33) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			Register[keyword[tmp1]] = Register[keyword[tmp2]];
+		else if (p.command == 33) {
+			Register[p.Rdest] = Register[p.Rscr];
 		}
-		else if (p.label == 34) {
-			tmp1 = p.s[1];
-			Register[keyword[tmp1]] = Register[32];
+		else if (p.command == 34) {
+			Register[p.Rdest] = Register[32];
 		}
-		else if (p.label == 35) {
-			tmp1 = p.s[1];
-			Register[keyword[tmp1]] = Register[33];
+		else if (p.command == 35) {
+			Register[p.Rdest] = Register[33];
 		}
-		else if (p.label == 36) {
+		else if (p.command == 36) {
 		}
-		else if (p.label == 37) {
-			if (Register[keyword["$v0"]] == 1)
-				std::cout << Register[keyword["$a0"]];
-			else if (Register[keyword["$v0"]] == 4) {
-				memo.print(Register[keyword["$a0"]]);
+		else if (p.command == 37) {
+			if (Register[2] == 1)
+				std::cout << Register[4];
+			else if (Register[2] == 4) {
+				memo.print(Register[4]);
 			}
-			else if (Register[keyword["$v0"]] == 5) {
+			else if (Register[2] == 5) {
 				std::cin >> i1;
-				Register[keyword["$v0"]] = i1;
+				Register[2] = i1;
 			}
-			else if (Register[keyword["$v0"]] == 8) {
+			else if (Register[2] == 8) {
 				std::cin >> tmp1;
-				memo.saveString(tmp1, Register[keyword["$a0"]], tmp1.length());
-				Register[keyword["$a1"]] = tmp1.length();
+				memo.saveString(tmp1, Register[4], tmp1.length());
+				Register[5] = tmp1.length();
 			}
-			else if (Register[keyword["$v0"]] == 9) {
-				Register[keyword["$v0"]] = memo.space(Register[keyword["$a0"]]);
+			else if (Register[2] == 9) {
+				Register[2] = memo.space(Register[4]);
 			}
-			else if (Register[keyword["$v0"]] == 10) {
+			else if (Register[2] == 10) {
 				exit(0);
 			}
-			else if (Register[keyword["$v0"]] == 17) {
-				exit(Register[keyword["$a0"]]);
+			else if (Register[2] == 17) {
+				exit(Register[4]);
 			}
 		}
-		else if (p.label == 38) {
-			tmp1 = p.s[1] + ':';
-			currentLine = textnum[tmp1];
+		else if (p.command == 38) {
+			currentLine = textnum[p.label];
 		}
-		else if (p.label == 39) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] == tmp)
-					currentLine = textnum[tmp3];
+		else if (p.command == 39) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] == tmp)
-					currentLine = textnum[tmp2];
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] == i1)
+				currentLine = textnum[p.label];
+		}
+		else if (p.command == 40) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] != i1)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 40) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] != tmp)
-					currentLine = textnum[tmp3];
+		else if (p.command == 41) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] != tmp)
-					currentLine = textnum[tmp2];
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] >= i1)
+				currentLine = textnum[p.label];
+		}
+		else if (p.command == 42) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] <= i1)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 41) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] >= tmp)
-					currentLine = textnum[tmp3];
+		else if (p.command == 43) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] >= tmp)
-					currentLine = textnum[tmp2];
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] > i1)
+				currentLine = textnum[p.label];
+		}
+		else if (p.command == 44) {
+			if (p.type) {
+				i1 = p.Scr;
 			}
+			else
+				i1 = Register[p.Scr];
+			if (Register[p.Rscr] < i1)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 42) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] <= tmp)
-					currentLine = textnum[tmp3];
-			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] <= tmp)
-					currentLine = textnum[tmp2];
-			}
+		else if (p.command == 45) {
+			if (Register[p.Rscr] == 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 43) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] > tmp)
-					currentLine = textnum[tmp3];
-			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] > tmp)
-					currentLine = textnum[tmp2];
-			}
+		else if (p.command == 46) {
+			if (Register[p.Rscr] != 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 44) {
-			tmp1 = p.s[1];
-			int tmp;
-			if (!p.type) {
-				tmp2 = p.s[2];
-				tmp3 = p.s[3] + ':';
-				tmp = Register[keyword[tmp2]];
-				if (Register[keyword[tmp1]] < tmp)
-					currentLine = textnum[tmp3];
-			}
-			else {
-				tmp2 = p.s[2] + ':';
-				tmp = p.n;
-				if (Register[keyword[tmp1]] < tmp)
-					currentLine = textnum[tmp2];
-			}
+		else if (p.command == 47) {
+			if (Register[p.Rscr] <= 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 45) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] == 0)
-				currentLine = textnum[tmp2];
+		else if (p.command == 48) {
+			if (Register[p.Rscr] >= 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 46) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] != 0)
-				currentLine = textnum[tmp2];
+		else if (p.command == 49) {
+			if (Register[p.Rscr] > 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 47) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] <= 0)
-				currentLine = textnum[tmp2];
+		else if (p.command == 50) {
+			if (Register[p.Rscr] < 0)
+				currentLine = textnum[p.label];
 		}
-		else if (p.label == 48) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] >= 0)
-				currentLine = textnum[tmp2];
+		else if (p.command == 51) {
+			currentLine = textnum[p.label];
 		}
-		else if (p.label == 49) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] > 0)
-				currentLine = textnum[tmp2];
-		}
-		else if (p.label == 50) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2] + ':';
-			if (Register[keyword[tmp1]] < 0)
-				currentLine = textnum[tmp2];
-		}
-		else if (p.label == 51) {
-			tmp1 = p.s[1] + ':';
-			currentLine = textnum[tmp1];
-		}
-		else if (p.label == 52) {
-			tmp1 = p.s[1];
-			currentLine = Register[keyword[tmp1]];
+		else if (p.command == 52) {
+			currentLine = Register[p.Rscr];
 			currentLine--;
 		}
-		else if (p.label == 53) {
-			tmp1 = p.s[1] + ':';
+		else if (p.command == 53) {
 			Register[31] = currentLine + 1;
-			currentLine = textnum[tmp1];
+			currentLine = textnum[p.label];
 		}
-		else if (p.label == 54) {
-			tmp1 = p.s[1];
+		else if (p.command == 54) {
 			Register[31] = currentLine + 1;
-			currentLine = Register[keyword[tmp1]];
+			currentLine = Register[p.Rscr];
 			currentLine--;
 		}
-		else if (p.label == 55) {
-			tmp1 = p.s[1];
-			Register[keyword[tmp1]] = p.n;
+		else if (p.command == 55) {
+			Register[p.Rdest] = p.Scr;
 		}
-		else if (p.label == 56) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 56) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else {
-				i2 = memory[tmp2];
+				i2 = memory[p.label];
 			}
-			Register[keyword[tmp1]] = i2;
+			Register[p.Rdest] = i2;
 		}
-		else if (p.label == 57) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 57) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else {
-				i2 = memory[tmp2];
+				i2 = memory[p.label];
 			}
-			Register[keyword[tmp1]] = memo.readByte(i2);
+			Register[p.Rdest] = memo.readByte(i2);
 		}
-		else if (p.label == 58) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 58) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else {
-				i2 = memory[tmp2];
+				i2 = memory[p.label];
 			}
-			Register[keyword[tmp1]] = memo.readHalf(i2);
+			Register[p.Rdest] = memo.readHalf(i2);
 		}
-		else if (p.label == 59) {
-			tmp1 = p.s[1];
-			tmp2 = p.s[2];
-			if (p.type) {
-				i2 = Register[keyword[tmp2]] + p.n;
+		else if (p.command == 59) {
+			if (p.type == 6) {
+				i2 = Register[p.Rscr] + p.address;
 			}
 			else {
-				i2 = memory[tmp2];
+				i2 = memory[p.label];
 			}
-			Register[keyword[tmp1]] = memo.readWord(i2);
+			Register[p.Rdest] = memo.readWord(i2);
 		}
-		else if (p.label == 0){}
+		else if (p.command == 0){}
 		currentLine++;
 	}
 	else {
