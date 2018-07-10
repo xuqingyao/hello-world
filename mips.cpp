@@ -4,8 +4,8 @@
 #include <cmath>
 #include <map>
 #include <vector>
-#include "tokenscanner.h"
 #include "memory.h"
+#include "tokenscanner.h"
 
 std::map<std::string, int> keyword = {
 	std::make_pair("$0", 0), std::make_pair("$1", 1), std::make_pair("$2", 2), std::make_pair("$3", 3),
@@ -26,66 +26,9 @@ std::map<std::string, int> keyword = {
 	std::make_pair("$gp", 28), std::make_pair("$sp", 29),std::make_pair("$fp", 30), std::make_pair("$ra", 31),
 	std::make_pair("$hi", 32), std::make_pair("$lo", 33),std::make_pair("$pc", 34)
 };
-
-Memory memo;
-std::map<std::string, int> memory;
-std::vector<std::string> text;
-std::map<std::string, int> textnum;
-std::vector<std::string> data;
-int Register[35] = { 0 };
-bool textStore = false, dataStore = false, mainbegin = false;
-int currentLine = 0, datapos = 0, dataLine = 0, textLine = 0;
-
-void processData();
-void processText();
-
-int main(int argc, char* argv[]) {
-	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile(argv[1]);
-	//infile.open("10.s");
-	std::string str, line;
-	if (infile) {
-		while (getline(infile, line)) {
-			tokenScanner scanner(line);
-			str = scanner.nextToken();
-			if (str == ".data") {
-				dataStore = true;
-				textStore = false;
-				continue;
-			}
-			else if (str == ".text") {
-				textStore = true;
-				dataStore = false;
-				continue;
-			}
-			if (dataStore) {
-				data.push_back(line);
-				dataLine++;
-			}
-			else if (textStore) {
-				text.push_back(line);
-				if (str[0] == '_')
-					textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
-				textLine++;
-			}
-		}
-	}
-	infile.close();
-	//freopen("10.in", "r", stdin);
-	//std::cout << dataLine << ' ' << textLine << std::endl;
-	for (; currentLine < dataLine;) {
-		processData();
-		//std::cout << currentLine << std::endl; 
-	}
-	for (currentLine = 0; currentLine < textLine; ) {
-		processText();
-		//std::cout << currentLine << std::endl;
-	}
-
-	system("pause");
-	return 0;
+bool isNumber(std::string &str) {
+	return (str[0] == '-' || (str[0] >= '0' && str[0] <= '9'));
 }
-
 int transToInt(std::string str) {
 	int i = 0, ans;
 	if (str[0] == '-')
@@ -118,10 +61,130 @@ short transToShort(std::string str) {
 	return ans;
 }
 
+struct textGroup {
+	std::string s[4];
+	int n;
+	bool type;//是否有数字
+	bool flag;//mul/div类型
+	textGroup() {
+		for (int i = 0; i < 4; ++i) {
+			s[i] = "";
+		}
+		n = 0;
+		type = 0;
+		flag = 0;
+	}
+	~textGroup() {}
+};
+
+/*struct dataGroup {
+std::string s[2];
+int n[10];
+int num;
+dataGroup() {
+s[0] = s[1] = "";
+for (int i = 0; i < 10; ++i) {
+n[i] = 0;
+}
+num = 0;
+}
+~dataGroup() {}
+};*/
+
+Memory memo;
+std::map<std::string, int> memory;
+//std::vector<std::string> text;
+std::map<std::string, int> textnum;
+std::vector<std::string> data;
+int Register[35] = { 0 };
+bool textStore = false, dataStore = false, mainbegin = false;
+int currentLine = 0, datapos = 0, dataLine = 0, textLine = 0;
+std::vector<textGroup> text1;
+//std::vector<dataGroup> data1;
+void processData();
+void processText();
+
+int main(int argc, char* argv[]) {
+	Register[29] = 4 * 1024 * 1024;
+	std::ifstream infile(argv[1]);
+	//infile.open("1.s");
+	std::string str, line, tmp;
+	if (infile) {
+		while (getline(infile, line)) {
+			tokenScanner scanner(line);
+			str = scanner.nextToken();
+			if (str == ".data") {
+				dataStore = true;
+				textStore = false;
+				continue;
+			}
+			else if (str == ".text") {
+				textStore = true;
+				dataStore = false;
+				continue;
+			}
+			if (dataStore) {
+				data.push_back(line);
+				/*struct dataGroup l;
+				l.s[0] = str;
+				int i = 1;
+				while (scanner.hasMoreToken()) {
+				tmp = scanner.nextToken();
+				if (isNumber(tmp)) {
+				l.n[l.num++] = transToInt(tmp);
+				}
+				else
+				l.s[i++] = tmp;
+				}
+				data1.push_back(l);*/
+				dataLine++;
+			}
+			else if (textStore) {
+				//text.push_back(line);
+				struct textGroup l;
+				l.s[0] = str;
+				int i = 1;
+				while (scanner.hasMoreToken()) {
+					tmp = scanner.nextToken();
+					if (isNumber(tmp)) {
+						l.n = transToInt(tmp);
+						l.type = 1;
+					}
+					else
+						l.s[i++] = tmp;
+				}
+				if ((l.type && i == 3) || i == 4)
+					l.flag = 1;
+				text1.push_back(l);
+				if (str[0] == '_')
+					textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
+				textLine++;
+			}
+		}
+	}
+	infile.close();
+	//freopen("10.in", "r", stdin);
+	//std::cout << dataLine << ' ' << textLine << std::endl;
+	for (; currentLine < dataLine;) {
+		processData();
+		//std::cout << currentLine << std::endl; 
+	}
+	for (currentLine = 0; currentLine < textLine; ) {
+		processText();
+		//std::cout << currentLine << std::endl;
+	}
+
+	system("pause");
+	return 0;
+}
+
+
 void processData() {
 	//std::cout << data[currentLine] << std::endl;
 	tokenScanner scanner(data[currentLine]);
 	std::string line = scanner.nextToken();
+	//dataGroup p = data1[currentLine];
+	//std::string line = p.s[0];
 	std::string tmp1;
 	int i1;
 	short s1;
@@ -185,9 +248,8 @@ void processData() {
 	}
 }
 void processText() {
-	//std::cout << text[currentLine] << std::endl;
-	tokenScanner scanner(text[currentLine]);
-	std::string line = scanner.nextToken();
+	textGroup p = text1[currentLine];
+	std::string line = p.s[0];
 	std::string tmp1, tmp2, tmp3;
 	int i1, i2;
 	char c1;
@@ -200,325 +262,297 @@ void processText() {
 	else if (line[0] == 'a' || line[0] == 's' || line[0] == 'm' || line[0] == 'd' || line[0] == 'x' || line[0] == 'n' || line[0] == 'r') {
 		if (mainbegin) {
 			if (line == "add") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] + i1;
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] + p.n;
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] + Register[keyword[tmp3]];
+				}
 			}
 			else if (line == "addu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "addiu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				i1 = transToInt(tmp3);
-				Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(i1);
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				Register[keyword[tmp1]] = Register[keyword[tmp2]] + abs(p.n);
 			}
 			else if (line == "sub") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] - i1;
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] - p.n;
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] - Register[keyword[tmp3]];
+				}
 			}
 			else if (line == "subu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] - abs(i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] - abs(p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] - abs(Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "mul") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					tmp3 = scanner.nextToken();
-					if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-						i1 = transToInt(tmp3);
-						Register[keyword[tmp1]] = Register[keyword[tmp2]] * i1;
-					}
-					else
+				tmp1 = p.s[1];
+				//std::cout << p.flag << ' ';
+				if (p.flag) {
+					tmp2 = p.s[2];
+					if (p.type)
+						Register[keyword[tmp1]] = Register[keyword[tmp2]] * p.n;
+					else {
+						tmp3 = p.s[3];
 						Register[keyword[tmp1]] = Register[keyword[tmp2]] * Register[keyword[tmp3]];
+					}
+					//std::cout << Register[keyword[tmp1]];
 				}
 				else {
-					if ((tmp2[0] == '-' && (tmp2[1] >= '0' && tmp2[1] <= '9')) || (tmp2[0] >= '0' && tmp2[0] <= '9')) {
-						i1 = transToInt(tmp2);
-						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * i1) / 2 ^ 32;
-						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * i1) % 2 ^ 32;
+					if (p.type) {
+						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * p.n) / 2 ^ 32;
+						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * p.n) % 2 ^ 32;
 					}
 					else {
+						tmp2 = p.s[2];
 						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) / 2 ^ 32;
 						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) % 2 ^ 32;
 					}
 				}
 			}
 			else if (line == "mulu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					tmp3 = scanner.nextToken();
-					if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-						i1 = transToInt(tmp3);
-						Register[keyword[tmp1]] = Register[keyword[tmp2]] * abs(i1);
-					}
-					else
+				tmp1 = p.s[1];
+				//std::cout << p.flag << ' ';
+				if (p.flag) {
+					tmp2 = p.s[2];
+					if (p.type)
+						Register[keyword[tmp1]] = Register[keyword[tmp2]] * abs(p.n);
+					else {
+						tmp3 = p.s[3];
 						Register[keyword[tmp1]] = Register[keyword[tmp2]] * abs(Register[keyword[tmp3]]);
+					}
+					//std::cout << Register[keyword[tmp1]];
 				}
 				else {
-					if ((tmp2[0] == '-' && (tmp2[1] >= '0' && tmp2[1] <= '9')) || (tmp2[0] >= '0' && tmp2[0] <= '9')) {
-						i1 = transToInt(tmp2);
-						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * abs(i1)) / 2 ^ 32;
-						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * abs(i1)) % 2 ^ 32;
+					if (p.type) {
+						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * abs(p.n)) / 2 ^ 32;
+						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * abs(p.n)) % 2 ^ 32;
 					}
 					else {
+						tmp2 = p.s[2];
 						Register[keyword["$hi"]] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) / 2 ^ 32;
 						Register[keyword["$lo"]] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) % 2 ^ 32;
 					}
 				}
 			}
 			else if (line == "div") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					tmp3 = scanner.nextToken();
-					if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-						i1 = transToInt(tmp3);
-						Register[keyword[tmp1]] = Register[keyword[tmp2]] / i1;
-					}
-					else
+				tmp1 = p.s[1];
+				if (p.flag) {
+					tmp2 = p.s[2];
+					if (p.type)
+						Register[keyword[tmp1]] = Register[keyword[tmp2]] / p.n;
+					else {
+						tmp3 = p.s[3];
 						Register[keyword[tmp1]] = Register[keyword[tmp2]] / Register[keyword[tmp3]];
+					}
 				}
 				else {
-					if ((tmp2[0] == '-' && (tmp2[1] >= '0' && tmp2[1] <= '9')) || (tmp2[0] >= '0' && tmp2[0] <= '9')) {
-						i1 = transToInt(tmp2);
-						Register[keyword["$hi"]] = Register[keyword[tmp1]] % i1;
-						Register[keyword["$lo"]] = Register[keyword[tmp1]] / i1;
+					if (p.type) {
+						Register[keyword["$hi"]] = Register[keyword[tmp1]] % p.n;
+						Register[keyword["$lo"]] = Register[keyword[tmp1]] / p.n;
 					}
 					else {
+						tmp2 = p.s[2];
 						Register[keyword["$hi"]] = Register[keyword[tmp1]] % Register[keyword[tmp2]];
 						Register[keyword["$lo"]] = Register[keyword[tmp1]] / Register[keyword[tmp2]];
 					}
 				}
 			}
 			else if (line == "divu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					tmp3 = scanner.nextToken();
-					if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-						i1 = transToInt(tmp3);
-						Register[keyword[tmp1]] = Register[keyword[tmp2]] / abs(i1);
-					}
-					else
+				tmp1 = p.s[1];
+				if (p.flag) {
+					tmp2 = p.s[2];
+					if (p.type)
+						Register[keyword[tmp1]] = Register[keyword[tmp2]] / abs(p.n);
+					else {
+						tmp3 = p.s[3];
 						Register[keyword[tmp1]] = Register[keyword[tmp2]] / abs(Register[keyword[tmp3]]);
+					}
 				}
 				else {
-					if ((tmp2[0] == '-' && (tmp2[1] >= '0' && tmp2[1] <= '9')) || (tmp2[0] >= '0' && tmp2[0] <= '9')) {
-						i1 = transToInt(tmp2);
-						Register[keyword["$hi"]] = Register[keyword[tmp1]] % abs(i1);
-						Register[keyword["$lo"]] = Register[keyword[tmp1]] / abs(i1);
+					if (p.type) {
+						Register[keyword["$hi"]] = Register[keyword[tmp1]] % abs(p.n);
+						Register[keyword["$lo"]] = Register[keyword[tmp1]] / abs(p.n);
 					}
 					else {
+						tmp2 = p.s[2];
 						Register[keyword["$hi"]] = Register[keyword[tmp1]] % abs(Register[keyword[tmp2]]);
 						Register[keyword["$lo"]] = Register[keyword[tmp1]] / abs(Register[keyword[tmp2]]);
 					}
 				}
 			}
 			else if (line == "xor") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ i1;
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ p.n;
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ Register[keyword[tmp3]];
+				}
 			}
 			else if (line == "xoru") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ abs(i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ abs(p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] ^ abs(Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "neg") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
 				Register[keyword[tmp1]] = -Register[keyword[tmp2]];
 			}
 			else if (line == "negu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
 				Register[keyword[tmp1]] = ~abs(Register[keyword[tmp2]]);
 			}
 			else if (line == "rem") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] % i1;
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] % p.n;
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] % Register[keyword[tmp3]];
+				}
 			}
 			else if (line == "remu") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = Register[keyword[tmp2]] % abs(i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = Register[keyword[tmp2]] % abs(p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = Register[keyword[tmp2]] % abs(Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "seq") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] == i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] == p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] == Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "sge") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] >= i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] >= p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] >= Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "sgt") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] > i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] > p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] > Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "sle") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] <= i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] <= p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] <= Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "slt") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if ((tmp3[0] == '-' && (tmp3[1] >= '0' && tmp3[1] <= '9')) || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] < i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] < p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] < Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "sne") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken();
-				if (tmp3[0] == '-' || (tmp3[0] >= '0' && tmp3[0] <= '9')) {
-					i1 = transToInt(tmp3);
-					Register[keyword[tmp1]] = (Register[keyword[tmp2]] != i1);
-				}
-				else
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type)
+					Register[keyword[tmp1]] = (Register[keyword[tmp2]] != p.n);
+				else {
+					tmp3 = p.s[3];
 					Register[keyword[tmp1]] = (Register[keyword[tmp2]] != Register[keyword[tmp3]]);
+				}
 			}
 			else if (line == "sb") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
 				else
 					i2 = memory[tmp2];
-				//memo.gotoPos(i2);
-				//memo.byte((char)Register[keyword[tmp1]]);
 				memo.save(i2, 1, Register[keyword[tmp1]]);
 			}
 			else if (line == "sh") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
 				else
 					i2 = memory[tmp2];
-				//memo.gotoPos(i2);
-				//memo.half((short)Register[keyword[tmp1]]);
 				memo.save(i2, 2, Register[keyword[tmp1]]);
 			}
 			else if (line == "sw") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
 				else
 					i2 = memory[tmp2];
-				//memo.gotoPos(i2);
-				//memo.word(Register[keyword[tmp1]]);
 				memo.save(i2, 4, Register[keyword[tmp1]]);
 			}
 			else if (line == "move") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
 				Register[keyword[tmp1]] = Register[keyword[tmp2]];
 			}
 			else if (line == "mfhi") {
-				tmp1 = scanner.nextToken();
+				tmp1 = p.s[1];
 				Register[keyword[tmp1]] = Register[keyword["$hi"]];
 			}
 			else if (line == "mflo") {
-				tmp1 = scanner.nextToken();
+				tmp1 = p.s[1];
 				Register[keyword[tmp1]] = Register[keyword["$lo"]];
 			}
 			else if (line == "nop") {
@@ -561,133 +595,163 @@ void processText() {
 	else if (line[0] == 'b' || line[0] == 'j') {
 		if (mainbegin) {
 			if (line == "b") {
-				tmp1 = scanner.nextToken() + ':';
+				tmp1 = p.s[1] + ':';
 				currentLine = textnum[tmp1];
 			}
 			if (line == "beq") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] == tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] == tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] == tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "bne") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] != tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] != tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] != tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "bge") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] >= tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] >= tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] >= tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "ble") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] <= tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] <= tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] <= tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "bgt") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] > tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] > tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] > tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "blt") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				tmp3 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
 				int tmp;
-				if (tmp2[0] == '$')
+				if (!p.type) {
+					tmp2 = p.s[2];
+					tmp3 = p.s[3] + ':';
 					tmp = Register[keyword[tmp2]];
-				else
-					tmp = transToInt(tmp2);
-				if (Register[keyword[tmp1]] < tmp)
-					currentLine = textnum[tmp3];
+					if (Register[keyword[tmp1]] < tmp)
+						currentLine = textnum[tmp3];
+				}
+				else {
+					tmp2 = p.s[2] + ':';
+					tmp = p.n;
+					if (Register[keyword[tmp1]] < tmp)
+						currentLine = textnum[tmp2];
+				}
 			}
 			if (line == "beqz") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] == 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "bnez") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] != 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "blez") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] <= 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "bgez") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] >= 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "bgtz") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] > 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "bltz") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken() + ':';
+				tmp1 = p.s[1];
+				tmp2 = p.s[2] + ':';
 				if (Register[keyword[tmp1]] < 0)
 					currentLine = textnum[tmp2];
 			}
 			if (line == "j") {
-				tmp1 = scanner.nextToken() + ':';
+				tmp1 = p.s[1] + ':';
 				currentLine = textnum[tmp1];
 			}
 			if (line == "jr") {
-				tmp1 = scanner.nextToken();
+				tmp1 = p.s[1];
 				currentLine = Register[keyword[tmp1]];
 				currentLine--;
 			}
 			if (line == "jal") {
-				tmp1 = scanner.nextToken() + ':';
+				tmp1 = p.s[1] + ':';
 				Register[31] = currentLine + 1;
 				currentLine = textnum[tmp1];
 			}
 			if (line == "jalr") {
-				tmp1 = scanner.nextToken();
+				tmp1 = p.s[1];
 				Register[31] = currentLine + 1;
 				currentLine = Register[keyword[tmp1]];
 				currentLine--;
@@ -699,58 +763,54 @@ void processText() {
 	else if (line[0] == 'l') {
 		if (mainbegin) {
 			if (line == "li") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				i1 = transToInt(tmp2);
-				Register[keyword[tmp1]] = i1;
+				tmp1 = p.s[1];
+				Register[keyword[tmp1]] = p.n;
 			}
 
 			if (line == "la") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
-				else
+				else {
 					i2 = memory[tmp2];
+				}
 				Register[keyword[tmp1]] = i2;
 			}
 			if (line == "lb") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
-				else
+				else {
 					i2 = memory[tmp2];
+				}
 				Register[keyword[tmp1]] = memo.readByte(i2);
 			}
 			if (line == "lh") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
-				else
+				else {
 					i2 = memory[tmp2];
+				}
 				Register[keyword[tmp1]] = memo.readHalf(i2);
 			}
 			if (line == "lw") {
-				tmp1 = scanner.nextToken();
-				tmp2 = scanner.nextToken();
-				if (scanner.hasMoreToken()) {
-					i1 = transToInt(tmp2);
-					tmp3 = scanner.nextToken();
-					i2 = Register[keyword[tmp3]] + i1;
+				tmp1 = p.s[1];
+				tmp2 = p.s[2];
+				if (p.type) {
+					//tmp2 = p.s[2];
+					i2 = Register[keyword[tmp2]] + p.n;
 				}
-				else
+				else {
+					//tmp2 = p.s[2] + ':';
 					i2 = memory[tmp2];
+				}
 				Register[keyword[tmp1]] = memo.readWord(i2);
 			}
 		}
