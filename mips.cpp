@@ -27,7 +27,7 @@ std::map<std::string, int> keyword = {
 	std::make_pair("$hi", 32), std::make_pair("$lo", 33),std::make_pair("$pc", 34)
 };
 bool isNumber(std::string &str) {
-	return (str[0] == '-' || (str[0] >= '0' && str[0] <= '9'));
+	return ((str[0] == '-' && (str[1] >= '0' && str[1] <= '9')) || (str[0] >= '0' && str[0] <= '9'));
 }
 int transToInt(std::string str) {
 	int i = 0, ans;
@@ -76,38 +76,52 @@ struct textGroup {
 	}
 	~textGroup() {}
 };
-
-/*struct dataGroup {
-std::string s[2];
-int n[10];
-int num;
-dataGroup() {
-s[0] = s[1] = "";
-for (int i = 0; i < 10; ++i) {
-n[i] = 0;
-}
-num = 0;
-}
-~dataGroup() {}
-};*/
+struct dataGroup {
+	std::string s[2];
+	int *n;
+	int num, Size;
+	dataGroup() {
+		s[0] = s[1] = "";
+		n = new int[10];
+		for (int i = 0; i < 10; ++i) {
+			n[i] = 0;
+		}
+		num = 0;
+		Size = 10;
+	}
+	void doubleSpace() {
+		int *tmp = n;
+		Size *= 2;
+		n = new int[Size];
+		for (int i = 0; i < Size / 2; ++i)
+			n[i] = tmp[i];
+		delete tmp;
+	}
+	void input(int i) {
+		if (num == Size)
+			doubleSpace();
+		n[num++] = i;
+	}
+	~dataGroup() {}
+};
 
 Memory memo;
 std::map<std::string, int> memory;
 //std::vector<std::string> text;
 std::map<std::string, int> textnum;
-std::vector<std::string> data;
+//std::vector<std::string> data;
 int Register[35] = { 0 };
 bool textStore = false, dataStore = false, mainbegin = false;
 int currentLine = 0, datapos = 0, dataLine = 0, textLine = 0;
 std::vector<textGroup> text1;
-//std::vector<dataGroup> data1;
+std::vector<dataGroup> data1;
 void processData();
 void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
 	std::ifstream infile(argv[1]);
-	//infile.open("1.s");
+	//infile.open("4.s");
 	std::string str, line, tmp;
 	if (infile) {
 		while (getline(infile, line)) {
@@ -124,19 +138,18 @@ int main(int argc, char* argv[]) {
 				continue;
 			}
 			if (dataStore) {
-				data.push_back(line);
-				/*struct dataGroup l;
+				//data.push_back(line);
+				struct dataGroup l;
 				l.s[0] = str;
-				int i = 1;
-				while (scanner.hasMoreToken()) {
-				tmp = scanner.nextToken();
-				if (isNumber(tmp)) {
-				l.n[l.num++] = transToInt(tmp);
+				if (str == ".ascii" || str == ".asciiz")
+					l.s[1] = scanner.nextToken();
+				else {
+					while (scanner.hasMoreToken()) {
+						tmp = scanner.nextToken();
+						l.input(transToInt(tmp));
+					}
 				}
-				else
-				l.s[i++] = tmp;
-				}
-				data1.push_back(l);*/
+				data1.push_back(l);
 				dataLine++;
 			}
 			else if (textStore) {
@@ -181,59 +194,63 @@ int main(int argc, char* argv[]) {
 
 void processData() {
 	//std::cout << data[currentLine] << std::endl;
-	tokenScanner scanner(data[currentLine]);
-	std::string line = scanner.nextToken();
-	//dataGroup p = data1[currentLine];
-	//std::string line = p.s[0];
+	//tokenScanner scanner(data[currentLine]);
+	//std::string line = scanner.nextToken();
+	dataGroup p = data1[currentLine];
+	std::string line = p.s[0];
 	std::string tmp1;
 	int i1;
 	short s1;
 	char c1;
 	if (line[0] == '.') {
 		if (line == ".align") {
-			tmp1 = scanner.nextToken();
-			i1 = transToInt(tmp1);
-			memo.align(i1);
+			//tmp1 = scanner.nextToken();
+			//i1 = transToInt(tmp1);
+			memo.align(p.n[0]);
 			datapos = memo.getPos();
 		}
 		else if (line == ".ascii") {
-			tmp1 = scanner.nextToken();
-			memo.ascii(tmp1);
+			//tmp1 = scanner.nextToken();
+			memo.ascii(p.s[1]);
 			datapos = memo.getPos();
 		}
 		else if (line == ".asciiz") {
-			tmp1 = scanner.nextToken();
-			memo.asciiz(tmp1);
+			//tmp1 = scanner.nextToken();
+			//std::cout << tmp1 << ' ' << p.s[1] << (tmp1 == p.s[1]) << ' ' << std::endl ;
+			memo.asciiz(p.s[1]);
 			datapos = memo.getPos();
 		}
 		else if (line == ".byte") {
-			while (scanner.hasMoreToken()) {
-				tmp1 = scanner.nextToken();
-				c1 = transToChar(tmp1);
-				memo.byte(c1);
+			//while (scanner.hasMoreToken()) {
+			//tmp1 = scanner.nextToken();
+			//c1 = transToChar(tmp1);
+			for (int i = 0; i < p.num; ++i) {
+				memo.byte(p.n[i]);
 			}
 			datapos = memo.getPos();
 		}
 		else if (line == ".half") {
-			while (scanner.hasMoreToken()) {
-				tmp1 = scanner.nextToken();
-				s1 = transToShort(tmp1);
-				memo.half(s1);
+			//while (scanner.hasMoreToken()) {
+			//tmp1 = scanner.nextToken();
+			//s1 = transToShort(tmp1);
+			for (int i = 0; i < p.num; ++i) {
+				memo.half(p.n[i]);
 			}
 			datapos = memo.getPos();
 		}
 		else if (line == ".word") {
-			while (scanner.hasMoreToken()) {
-				tmp1 = scanner.nextToken();
-				i1 = transToInt(tmp1);
-				memo.word(i1);
+			//while (scanner.hasMoreToken()) {
+			//tmp1 = scanner.nextToken();
+			//i1 = transToInt(tmp1);
+			for (int i = 0; i < p.num; ++i) {
+				memo.word(p.n[i]);
 			}
 			datapos = memo.getPos();
 		}
 		else if (line == ".space") {
-			tmp1 = scanner.nextToken();
-			i1 = transToInt(tmp1);
-			memo.space(i1);
+			//tmp1 = scanner.nextToken();
+			//i1 = transToInt(tmp1);
+			memo.space(p.n[0]);
 			datapos = memo.getPos();
 		}
 		//std::cout << line << ' ';
