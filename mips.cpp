@@ -7,43 +7,44 @@
 #include "memory.h"
 #include "tokenscanner.h"
 
-std::map<std::string, int> keyword = {
-	std::make_pair("$0", 0), std::make_pair("$1", 1), std::make_pair("$2", 2), std::make_pair("$3", 3),
-	std::make_pair("$4", 4), std::make_pair("$5", 5), std::make_pair("$6", 6), std::make_pair("$7", 7),
-	std::make_pair("$8", 8), std::make_pair("$9", 9), std::make_pair("$10", 10), std::make_pair("$11", 11),
-	std::make_pair("$12", 12), std::make_pair("$13", 13), std::make_pair("$14", 14), std::make_pair("$15", 15),
-	std::make_pair("$16", 16), std::make_pair("$17", 17), std::make_pair("$18", 18), std::make_pair("$19", 19),
-	std::make_pair("$20", 20), std::make_pair("$21", 21), std::make_pair("$22", 22), std::make_pair("$23", 23),
-	std::make_pair("$24", 24), std::make_pair("$25", 25), std::make_pair("$26", 26), std::make_pair("$27", 27),
-	std::make_pair("$28", 28), std::make_pair("$29", 29),std::make_pair("$30", 30), std::make_pair("$31", 31),
-	std::make_pair("$zero", 0), std::make_pair("$at", 1), std::make_pair("$v0", 2), std::make_pair("$v1", 3),
-	std::make_pair("$a0", 4), std::make_pair("$a1", 5), std::make_pair("$a2", 6), std::make_pair("$a3", 7),
-	std::make_pair("$t0", 8), std::make_pair("$t1", 9), std::make_pair("$t2", 10), std::make_pair("$t3", 11),
-	std::make_pair("$t4", 12), std::make_pair("$t5", 13), std::make_pair("$t6", 14), std::make_pair("$t7", 15),
-	std::make_pair("$s0", 16), std::make_pair("$s1", 17), std::make_pair("$s2", 18), std::make_pair("$s3", 19),
-	std::make_pair("$s4", 20), std::make_pair("$s5", 21), std::make_pair("$s6", 22), std::make_pair("$s7", 23),
-	std::make_pair("$t8", 24), std::make_pair("$t9", 25), std::make_pair("$k0", 26), std::make_pair("$k1", 27),
-	std::make_pair("$gp", 28), std::make_pair("$sp", 29),std::make_pair("$fp", 30), std::make_pair("$ra", 31),
-	std::make_pair("$hi", 32), std::make_pair("$lo", 33),std::make_pair("$pc", 34)
-};
-std::map<std::string, int> Label = {
-	std::make_pair(".align", 1), std::make_pair(".ascii", 2), std::make_pair(".asciiz", 3), std::make_pair(".byte", 4),
-	std::make_pair(".half", 5), std::make_pair(".word", 6), std::make_pair(".space", 7), std::make_pair(".data", 8),
-	std::make_pair(".text", 9), std::make_pair(".add", 10), std::make_pair("addu", 11), std::make_pair("addiu", 12),
-	std::make_pair("sub", 13), std::make_pair("subu", 14), std::make_pair("mul", 15), std::make_pair("mulu", 16),
-	std::make_pair("div", 17), std::make_pair("divu", 18), std::make_pair("xor", 19), std::make_pair("xoru", 20),
-	std::make_pair("neg", 21), std::make_pair("negu", 22), std::make_pair("rem", 23), std::make_pair("remu", 24),
-	std::make_pair("li", 25), std::make_pair("seq", 26), std::make_pair("sge", 27), std::make_pair("sgt", 28),
-	std::make_pair("sle", 29), std::make_pair("slt", 30), std::make_pair("sne", 31), std::make_pair("b", 32),
-	std::make_pair("beq", 33), std::make_pair("bne", 34), std::make_pair("bge", 35), std::make_pair("ble", 36),
-	std::make_pair("bgt", 37), std::make_pair("blt", 38), std::make_pair("beqz", 39), std::make_pair("bnez", 40),
-	std::make_pair("blez", 41), std::make_pair("bgez", 42), std::make_pair("bgtz", 43), std::make_pair("bltz", 44),
-	std::make_pair("j", 45), std::make_pair("jr", 46), std::make_pair("jal", 47), std::make_pair("jalr", 48),
-	std::make_pair("la", 49), std::make_pair("lb", 50), std::make_pair("lh", 51), std::make_pair("lw", 52),
-	std::make_pair("sb", 53), std::make_pair("sh", 54), std::make_pair("sw", 55), std::make_pair("move", 56),
-	std::make_pair("mfhi", 57), std::make_pair("mflo", 58), std::make_pair("nop", 59), std::make_pair("syscall", 60),
-	std::make_pair("main", 61)
-};
+std::map<std::string, int> keyword;
+void initKey(){
+	keyword["$0"] = 0; keyword["$1"] = 1; keyword["$2"] = 2; keyword["$3"] = 3;
+	keyword["$4"] = 4; keyword["$5"] = 5; keyword["$6"] = 6; keyword["$7"] = 7;
+	keyword["$8"] = 8; keyword["$9"] = 9; keyword["$10"] = 10; keyword["$11"] = 11;
+	keyword["$12"] = 12; keyword["$13"] = 13; keyword["$14"] = 14; keyword["$15"] = 15;
+	keyword["$16"] = 16; keyword["$17"] = 17; keyword["$18"] = 18; keyword["$19"] = 19;
+	keyword["$20"] = 20; keyword["$21"] = 21; keyword["$22"] = 22; keyword["$23"] = 23;
+	keyword["$24"] = 24; keyword["$25"] = 25; keyword["$26"] = 26; keyword["$27"] = 27;
+	keyword["$28"] = 28; keyword["$29"] = 29; keyword["$30"] = 30; keyword["$31"] = 31;
+	keyword["$zero"] = 0; keyword["$at"] = 1; keyword["$v0"] = 2; keyword["$v1"] = 3;
+	keyword["$a0"] = 4; keyword["$a1"] = 5; keyword["$a2"] = 6; keyword["$a3"] = 7;
+	keyword["$t0"] = 8; keyword["$t1"] = 9; keyword["$t2"] = 10; keyword["$t3"] = 11;
+	keyword["$t4"] = 12; keyword["$t5"] = 13; keyword["$t6"] = 14; keyword["$t7"] = 15;
+	keyword["$s0"] = 16; keyword["$s1"] = 17; keyword["$s2"] = 18; keyword["$s3"] = 19;
+	keyword["$s4"] = 20; keyword["$s5"] = 21; keyword["$s6"] = 22; keyword["$s7"] = 23;
+	keyword["$t8"] = 24; keyword["$t9"] = 25; keyword["$k0"] = 26; keyword["$k1"] = 27;
+	keyword["$gp"] = 28; keyword["$sp"] = 29; keyword["$fp"] = 30; keyword["$ra"] = 31;
+	keyword["$hi"] = 32; keyword["$lo"] = 33; keyword["$pc"] = 34;
+}
+std::map<std::string, int> Label;
+void initLabel(){
+	Label[".align"] = 1; Label[".ascii"] = 2; Label[".asciiz"] = 3; Label[".byte"] = 4;
+	Label[".half"] = 5; Label[".word"] = 6; Label[".space"] = 7; Label["main"] = 8;
+	Label["add"] = 9; Label["addu"] = 10; Label["addiu"] = 11; Label["sub"] = 12;
+	Label["subu"] = 13; Label["mul"] = 14; Label["mulu"] = 15; Label["div"] = 16;
+	Label["divu"] = 17; Label["xor"] = 18; Label["xoru"] = 19; Label["neg"] = 20;
+	Label["negu"] = 21; Label["rem"] = 22; Label["remu"] = 23; Label["seq"] = 24;
+	Label["sge"] = 25; Label["sgt"] = 26; Label["sle"] = 27; Label["slt"] = 28;
+	Label["sne"] = 29; Label["sb"] = 30; Label["sh"] = 31; Label["sw"] = 32;
+	Label["move"] = 33; Label["mfhi"] = 34; Label["mflo"] = 35; Label["nop"] = 36;
+	Label["syscall"] = 37; Label["b"] = 38; Label["beq"] = 39; Label["bne"] = 40;
+	Label["bge"] = 41; Label["ble"] = 42; Label["bgt"] = 43; Label["blt"] = 44;
+	Label["beqz"] = 45; Label["bnez"] = 46; Label["blez"] = 47; Label["bgez"] = 48;
+	Label["bgtz"] = 49; Label["bltz"] = 50; Label["j"] = 51; Label["jr"] = 52; 
+	Label["jal"] = 53; Label["jalr"] = 54; Label["li"] = 55; Label["la"] = 56;
+	Label["lb"] = 57; Label["lh"] = 58; Label["lw"] = 59; 
+}
 bool isNumber(std::string &str) {
 	return ((str[0] == '-' && (str[1] >= '0' && str[1] <= '9')) || (str[0] >= '0' && str[0] <= '9'));
 }
@@ -96,7 +97,7 @@ struct textGroup {
 	}
 	~textGroup() {}
 };
-int transToLabel(std::string str) {
+/*int transToLabel(std::string &str) {
 	if (str == ".align") return 1;
 	else if (str == ".ascii") return 2;
 	else if (str == ".asciiz") return 3;
@@ -157,7 +158,7 @@ int transToLabel(std::string str) {
 	else if (str == "lh") return 58;
 	else if (str == "lw") return 59;
 	else return 0;
-}
+}*/
 struct dataGroup {
 	std::string s[2];
 	int *n;
@@ -203,9 +204,11 @@ void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile(argv[1]);
-	//infile.open("4.s");
+	std::ifstream infile;
+	infile.open("4.s");
 	std::string str, line, tmp;
+	initKey();
+	initLabel();
 	if (infile) {
 		while (getline(infile, line)) {
 			tokenScanner scanner(line);
@@ -223,7 +226,11 @@ int main(int argc, char* argv[]) {
 			if (dataStore) {
 				struct dataGroup l;
 				l.s[0] = str;
-				l.label = transToLabel(str);
+				if (str[0] == '.')
+					l.label = Label[str];
+				else 
+					l.label = 0;
+				//std::cout << l.label << std::endl;
 				if (str == ".ascii" || str == ".asciiz")
 					l.s[1] = scanner.nextToken();
 				else {
@@ -238,7 +245,13 @@ int main(int argc, char* argv[]) {
 			else if (textStore) {
 				struct textGroup l;
 				l.s[0] = str;
-				l.label = transToLabel(str);
+				if (str[0] == '_') {
+					l.label = 0;
+					textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
+				}
+				else
+					l.label = Label[str];
+				//std::cout << l.label << std::endl;
 				int i = 1;
 				while (scanner.hasMoreToken()) {
 					tmp = scanner.nextToken();
@@ -252,8 +265,8 @@ int main(int argc, char* argv[]) {
 				if ((l.type && i == 3) || i == 4)
 					l.flag = 1;
 				text1.push_back(l);
-				if (str[0] == '_')
-					textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
+				//if (str[0] == '_')
+					//textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
 				textLine++;
 			}
 		}
@@ -389,13 +402,13 @@ void processText() {
 			}
 			else {
 				if (p.type) {
-					Register[keyword["$hi"]] = (Register[keyword[tmp1]] * p.n) / 2 ^ 32;
-					Register[keyword["$lo"]] = (Register[keyword[tmp1]] * p.n) % 2 ^ 32;
+					Register[32] = (Register[keyword[tmp1]] * p.n) / 2 ^ 32;
+					Register[33] = (Register[keyword[tmp1]] * p.n) % 2 ^ 32;
 				}
 				else {
 					tmp2 = p.s[2];
-					Register[keyword["$hi"]] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) / 2 ^ 32;
-					Register[keyword["$lo"]] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) % 2 ^ 32;
+					Register[32] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) / 2 ^ 32;
+					Register[33] = (Register[keyword[tmp1]] * Register[keyword[tmp2]]) % 2 ^ 32;
 				}
 			}
 		}
@@ -414,13 +427,13 @@ void processText() {
 			}
 			else {
 				if (p.type) {
-					Register[keyword["$hi"]] = (Register[keyword[tmp1]] * abs(p.n)) / 2 ^ 32;
-					Register[keyword["$lo"]] = (Register[keyword[tmp1]] * abs(p.n)) % 2 ^ 32;
+					Register[32] = (Register[keyword[tmp1]] * abs(p.n)) / 2 ^ 32;
+					Register[33] = (Register[keyword[tmp1]] * abs(p.n)) % 2 ^ 32;
 				}
 				else {
 					tmp2 = p.s[2];
-					Register[keyword["$hi"]] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) / 2 ^ 32;
-					Register[keyword["$lo"]] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) % 2 ^ 32;
+					Register[32] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) / 2 ^ 32;
+					Register[33] = (Register[keyword[tmp1]] * abs(Register[keyword[tmp2]])) % 2 ^ 32;
 				}
 			}
 		}
@@ -437,13 +450,13 @@ void processText() {
 			}
 			else {
 				if (p.type) {
-					Register[keyword["$hi"]] = Register[keyword[tmp1]] % p.n;
-					Register[keyword["$lo"]] = Register[keyword[tmp1]] / p.n;
+					Register[32] = Register[keyword[tmp1]] % p.n;
+					Register[33] = Register[keyword[tmp1]] / p.n;
 				}
 				else {
 					tmp2 = p.s[2];
-					Register[keyword["$hi"]] = Register[keyword[tmp1]] % Register[keyword[tmp2]];
-					Register[keyword["$lo"]] = Register[keyword[tmp1]] / Register[keyword[tmp2]];
+					Register[32] = Register[keyword[tmp1]] % Register[keyword[tmp2]];
+					Register[33] = Register[keyword[tmp1]] / Register[keyword[tmp2]];
 				}
 			}
 		}
@@ -460,13 +473,13 @@ void processText() {
 			}
 			else {
 				if (p.type) {
-					Register[keyword["$hi"]] = Register[keyword[tmp1]] % abs(p.n);
-					Register[keyword["$lo"]] = Register[keyword[tmp1]] / abs(p.n);
+					Register[32] = Register[keyword[tmp1]] % abs(p.n);
+					Register[33] = Register[keyword[tmp1]] / abs(p.n);
 				}
 				else {
 					tmp2 = p.s[2];
-					Register[keyword["$hi"]] = Register[keyword[tmp1]] % abs(Register[keyword[tmp2]]);
-					Register[keyword["$lo"]] = Register[keyword[tmp1]] / abs(Register[keyword[tmp2]]);
+					Register[32] = Register[keyword[tmp1]] % abs(Register[keyword[tmp2]]);
+					Register[33] = Register[keyword[tmp1]] / abs(Register[keyword[tmp2]]);
 				}
 			}
 		}
@@ -617,11 +630,11 @@ void processText() {
 		}
 		else if (p.label == 34) {
 			tmp1 = p.s[1];
-			Register[keyword[tmp1]] = Register[keyword["$hi"]];
+			Register[keyword[tmp1]] = Register[32];
 		}
 		else if (p.label == 35) {
 			tmp1 = p.s[1];
-			Register[keyword[tmp1]] = Register[keyword["$lo"]];
+			Register[keyword[tmp1]] = Register[33];
 		}
 		else if (p.label == 36) {
 		}
