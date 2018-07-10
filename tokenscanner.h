@@ -81,6 +81,7 @@ public:
 					str += buffer[currentPosition];
 				currentPosition++;
 			}
+			currentPosition++;
 			return str;
 		}
 
