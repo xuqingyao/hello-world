@@ -8,7 +8,7 @@
 #include "tokenscanner.h"
 
 std::map<std::string, int> keyword;
-void initKey(){
+void initKey() {
 	keyword["$0"] = 0; keyword["$1"] = 1; keyword["$2"] = 2; keyword["$3"] = 3;
 	keyword["$4"] = 4; keyword["$5"] = 5; keyword["$6"] = 6; keyword["$7"] = 7;
 	keyword["$8"] = 8; keyword["$9"] = 9; keyword["$10"] = 10; keyword["$11"] = 11;
@@ -28,7 +28,7 @@ void initKey(){
 	keyword["$hi"] = 32; keyword["$lo"] = 33; keyword["$pc"] = 34;
 }
 std::map<std::string, int> Label;
-void initLabel(){
+void initLabel() {
 	Label[".align"] = 1; Label[".ascii"] = 2; Label[".asciiz"] = 3; Label[".byte"] = 4;
 	Label[".half"] = 5; Label[".word"] = 6; Label[".space"] = 7; Label["main"] = 8;
 	Label["add"] = 9; Label["addu"] = 10; Label["addiu"] = 11; Label["sub"] = 12;
@@ -41,9 +41,9 @@ void initLabel(){
 	Label["syscall"] = 37; Label["b"] = 38; Label["beq"] = 39; Label["bne"] = 40;
 	Label["bge"] = 41; Label["ble"] = 42; Label["bgt"] = 43; Label["blt"] = 44;
 	Label["beqz"] = 45; Label["bnez"] = 46; Label["blez"] = 47; Label["bgez"] = 48;
-	Label["bgtz"] = 49; Label["bltz"] = 50; Label["j"] = 51; Label["jr"] = 52; 
+	Label["bgtz"] = 49; Label["bltz"] = 50; Label["j"] = 51; Label["jr"] = 52;
 	Label["jal"] = 53; Label["jalr"] = 54; Label["li"] = 55; Label["la"] = 56;
-	Label["lb"] = 57; Label["lh"] = 58; Label["lw"] = 59; 
+	Label["lb"] = 57; Label["lh"] = 58; Label["lw"] = 59;
 }
 bool isNumber(std::string &str) {
 	return ((str[0] == '-' && (str[1] >= '0' && str[1] <= '9')) || (str[0] >= '0' && str[0] <= '9'));
@@ -84,11 +84,11 @@ struct textGroup {
 	int command;
 	std::string label;
 	textGroup() {
-		Rdest = Rscr = Scr = address  = command = -1;
+		Rdest = Rscr = Scr = address = command = -1;
 		type = 0;//type == 1 —— number | type == 0 —— Register | type == 2 —— mul/div (3, n) | type == 3 —— mul/div (3, r) | 
 		label = "";
 	}
-	~textGroup(){}
+	~textGroup() {}
 };
 
 struct dataGroup {
@@ -137,7 +137,7 @@ void processText();
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
 	std::ifstream infile(argv[1]);
-	//nfile.open("4.s");
+	//infile.open("4.s");
 	std::string str, line, tmp;
 	std::string s[3];
 	initKey();
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 				l.s[0] = str;
 				if (str[0] == '.')
 					l.command = Label[str];
-				else 
+				else
 					l.command = 0;
 				if (str == ".ascii" || str == ".asciiz")
 					l.s[1] = scanner.nextToken();
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
 				if ((l.command >= 9 && l.command <= 13) || (l.command >= 18 && l.command <= 29)) {
 					l.Rdest = keyword[s[0]];
 					l.Rscr = keyword[s[1]];
-					if (s[2] == ""){}
+					if (s[2] == "") {}
 					else if (isNumber(s[2])) {
 						l.type = 1;
 						l.Scr = transToInt(s[2]);
@@ -270,7 +270,7 @@ int main(int argc, char* argv[]) {
 				}
 				text1.push_back(l);
 				//if (str[0] == '_')
-					//textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
+				//textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
 				textLine++;
 			}
 		}
@@ -294,42 +294,44 @@ void processData() {
 	int i1;
 	short s1;
 	char c1;
-	if (p.command == 1){
+	switch (p.command) {
+	case 1:
 		memo.align(p.n[0]);
 		datapos = memo.getPos();
-	}
-	else if (p.command == 2){
+		break;
+	case 2:
 		memo.ascii(p.s[1]);
 		datapos = memo.getPos();
-	}
-	else if (p.command == 3){
+		break;
+	case 3:
 		memo.asciiz(p.s[1]);
 		datapos = memo.getPos();
-	}
-	else if (p.command == 4){
+		break;
+	case 4:
 		for (int i = 0; i < p.num; ++i) {
 			memo.byte(p.n[i]);
 		}
 		datapos = memo.getPos();
-	}
-	else if (p.command == 5) {
+		break;
+	case 5:
 		for (int i = 0; i < p.num; ++i) {
 			memo.half(p.n[i]);
 		}
 		datapos = memo.getPos();
-	}
-	else if (p.command == 6){
+		break;
+	case 6:
 		for (int i = 0; i < p.num; ++i) {
 			memo.word(p.n[i]);
 		}
 		datapos = memo.getPos();
-	}
-	else if (p.command == 7){
+		break;
+	case 7:
 		memo.space(p.n[0]);
 		datapos = memo.getPos();
-	}
-	else {
+		break;
+	default:
 		memory.insert(std::map<std::string, int> ::value_type(line, datapos));
+		break;
 	}
 	currentLine++;
 }
@@ -344,34 +346,35 @@ void processText() {
 		currentLine++;
 	}
 	else if (mainbegin) {
-		if (p.command == 9) {
+		switch (p.command) {
+		case 9:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] + p.Scr;
 			else
 				Register[p.Rdest] = Register[p.Rscr] + Register[p.Scr];
-		}
-		else if (p.command == 10) {
+			break;
+		case 10:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
 			else
 				Register[p.Rdest] = Register[p.Rscr] + abs(Register[p.Scr]);
-		}
-		else if (p.command == 11) {
+			break;
+		case 11:
 			Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
-		}
-		else if (p.command == 12) {
+			break;
+		case 12:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] - p.Scr;
 			else
 				Register[p.Rdest] = Register[p.Rscr] - Register[p.Scr];
-		}
-		else if (p.command == 13) {
+			break;
+		case 13:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] - abs(p.Scr);
 			else
 				Register[p.Rdest] = Register[p.Rscr] - abs(Register[p.Scr]);
-		}
-		else if (p.command == 14) {
+			break;
+		case 14:
 			if (p.type == 2)
 				Register[p.Rdest] = Register[p.Rscr] * p.Scr;
 			else if (p.type == 3)
@@ -384,8 +387,8 @@ void processText() {
 				Register[32] = (Register[p.Rdest] * Register[p.Scr]) / 2 ^ 32;
 				Register[33] = (Register[p.Rdest] * Register[p.Scr]) % 2 ^ 32;
 			}
-		}
-		else if (p.command == 15) {
+			break;
+		case 15:
 			if (p.type == 2)
 				Register[p.Rdest] = Register[p.Rscr] * abs(p.Scr);
 			else if (p.type == 3)
@@ -398,13 +401,13 @@ void processText() {
 				Register[32] = (Register[p.Rdest] * abs(Register[p.Scr])) / 2 ^ 32;
 				Register[33] = (Register[p.Rdest] * abs(Register[p.Scr])) % 2 ^ 32;
 			}
-		}
-		else if (p.command == 16) {
+			break;
+		case 16:
 			if (p.type == 2)
 				Register[p.Rdest] = Register[p.Rscr] / p.Scr;
 			else if (p.type == 3)
 				Register[p.Rdest] = Register[p.Rscr] / Register[p.Scr];
-			else if (p.type == 4){
+			else if (p.type == 4) {
 				Register[32] = Register[p.Rdest] % p.Scr;
 				Register[33] = Register[p.Rdest] / p.Scr;
 			}
@@ -412,8 +415,8 @@ void processText() {
 				Register[32] = Register[p.Rdest] % Register[p.Scr];
 				Register[33] = Register[p.Rdest] / Register[p.Scr];
 			}
-		}
-		else if (p.command == 17) {
+			break;
+		case 17:
 			if (p.type == 2)
 				Register[p.Rdest] = Register[p.Rscr] / abs(p.Scr);
 			else if (p.type == 3)
@@ -426,137 +429,138 @@ void processText() {
 				Register[32] = Register[p.Rdest] % abs(Register[p.Scr]);
 				Register[33] = Register[p.Rdest] / abs(Register[p.Scr]);
 			}
-		}
-		else if (p.command == 18) {
+			break;
+		case 18:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] ^ p.Scr;
 			else
 				Register[p.Rdest] = Register[p.Rscr] ^ Register[p.Scr];
-		}
-		else if (p.command == 19) {
+			break;
+		case 19:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] ^ abs(p.Scr);
 			else
 				Register[p.Rdest] = Register[p.Rscr] ^ abs(Register[p.Scr]);
-		}
-		else if (p.command == 20) {
+			break;
+		case 20:
 			Register[p.Rdest] = -Register[p.Rscr];
-		}
-		else if (p.command == 21) {
+			break;
+		case 21:
 			Register[p.Rdest] = ~abs(Register[p.Rscr]);
-		}
-		else if (p.command == 22) {
+			break;
+		case 22:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] % p.Scr;
 			else
 				Register[p.Rdest] = Register[p.Rscr] % Register[p.Scr];
-		}
-		else if (p.command == 23) {
+			break;
+		case 23:
 			if (p.type)
 				Register[p.Rdest] = Register[p.Rscr] % abs(p.Scr);
 			else
 				Register[p.Rdest] = Register[p.Rscr] % abs(Register[p.Scr]);
-		}
-		else if (p.command == 24) {
+			break;
+		case 24:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] == p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] == Register[p.Scr]);
-		}
-		else if (p.command == 25) {
+			break;
+		case 25:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] >= p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] >= Register[p.Scr]);
-		}
-		else if (p.command == 26) {
+			break;
+		case 26:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] > p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] > Register[p.Scr]);
-		}
-		else if (p.command == 27) {
+			break;
+		case 27:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] <= p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] <= Register[p.Scr]);
-		}
-		else if (p.command == 28) {
+			break;
+		case 28:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] < p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] < Register[p.Scr]);
-		}
-		else if (p.command == 29) {
+			break;
+		case 29:
 			if (p.type)
 				Register[p.Rdest] = (Register[p.Rscr] != p.Scr);
 			else
 				Register[p.Rdest] = (Register[p.Rscr] != Register[p.Scr]);
-		}
-		else if (p.command == 30) {
+			break;
+		case 30:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
 			else
 				i2 = memory[p.label];
 			memo.save(i2, 1, Register[p.Rdest]);
-		}
-		else if (p.command == 31) {
+			break;
+		case 31:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
 			else
 				i2 = memory[p.label];
 			memo.save(i2, 2, Register[p.Rdest]);
-		}
-		else if (p.command == 32) {
+			break;
+		case 32:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
 			else
 				i2 = memory[p.label];
 			memo.save(i2, 4, Register[p.Rdest]);
-		}
-		else if (p.command == 33) {
+			break;
+		case 33:
 			Register[p.Rdest] = Register[p.Rscr];
-		}
-		else if (p.command == 34) {
+			break;
+		case 34:
 			Register[p.Rdest] = Register[32];
-		}
-		else if (p.command == 35) {
+			break;
+		case 35:
 			Register[p.Rdest] = Register[33];
-		}
-		else if (p.command == 36) {
-		}
-		else if (p.command == 37) {
-			if (Register[2] == 1)
+			break;
+		case 37:
+			switch (Register[2]) {
+			case 1:
 				std::cout << Register[4];
-			else if (Register[2] == 4) {
+				break;
+			case 4:
 				memo.print(Register[4]);
-			}
-			else if (Register[2] == 5) {
+				break;
+			case 5:
 				std::cin >> i1;
 				Register[2] = i1;
-			}
-			else if (Register[2] == 8) {
+				break;
+			case 8:
 				std::cin >> tmp1;
 				memo.saveString(tmp1, Register[4], tmp1.length());
 				Register[5] = tmp1.length();
-			}
-			else if (Register[2] == 9) {
+				break;
+			case 9:
 				Register[2] = memo.space(Register[4]);
-			}
-			else if (Register[2] == 10) {
+				break;
+			case 10:
 				exit(0);
-			}
-			else if (Register[2] == 17) {
+				break;
+			case 17:
 				exit(Register[4]);
+				break;
 			}
-		}
-		else if (p.command == 38) {
+			break;
+		case 38:
 			currentLine = textnum[p.label];
-		}
-		else if (p.command == 39) {
+			break;
+		case 39:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -564,8 +568,8 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] == i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 40) {
+			break;
+		case 40:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -573,8 +577,8 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] != i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 41) {
+			break;
+		case 41:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -582,8 +586,8 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] >= i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 42) {
+			break;
+		case 42:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -591,8 +595,8 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] <= i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 43) {
+			break;
+		case 43:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -600,8 +604,8 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] > i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 44) {
+			break;
+		case 44:
 			if (p.type) {
 				i1 = p.Scr;
 			}
@@ -609,51 +613,51 @@ void processText() {
 				i1 = Register[p.Scr];
 			if (Register[p.Rscr] < i1)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 45) {
+			break;
+		case 45:
 			if (Register[p.Rscr] == 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 46) {
+			break;
+		case 46:
 			if (Register[p.Rscr] != 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 47) {
+			break;
+		case 47:
 			if (Register[p.Rscr] <= 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 48) {
+			break;
+		case 48:
 			if (Register[p.Rscr] >= 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 49) {
+			break;
+		case 49:
 			if (Register[p.Rscr] > 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 50) {
+			break;
+		case 50:
 			if (Register[p.Rscr] < 0)
 				currentLine = textnum[p.label];
-		}
-		else if (p.command == 51) {
+			break;
+		case 51:
 			currentLine = textnum[p.label];
-		}
-		else if (p.command == 52) {
+			break;
+		case 52:
 			currentLine = Register[p.Rscr];
 			currentLine--;
-		}
-		else if (p.command == 53) {
+			break;
+		case 53:
 			Register[31] = currentLine + 1;
 			currentLine = textnum[p.label];
-		}
-		else if (p.command == 54) {
+			break;
+		case 54:
 			Register[31] = currentLine + 1;
 			currentLine = Register[p.Rscr];
 			currentLine--;
-		}
-		else if (p.command == 55) {
+			break;
+		case 55:
 			Register[p.Rdest] = p.Scr;
-		}
-		else if (p.command == 56) {
+			break;
+		case 56:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
@@ -661,8 +665,8 @@ void processText() {
 				i2 = memory[p.label];
 			}
 			Register[p.Rdest] = i2;
-		}
-		else if (p.command == 57) {
+			break;
+		case 57:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
@@ -670,8 +674,8 @@ void processText() {
 				i2 = memory[p.label];
 			}
 			Register[p.Rdest] = memo.readByte(i2);
-		}
-		else if (p.command == 58) {
+			break;
+		case 58:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
@@ -679,8 +683,8 @@ void processText() {
 				i2 = memory[p.label];
 			}
 			Register[p.Rdest] = memo.readHalf(i2);
-		}
-		else if (p.command == 59) {
+			break;
+		case 59:
 			if (p.type == 6) {
 				i2 = Register[p.Rscr] + p.address;
 			}
@@ -688,8 +692,10 @@ void processText() {
 				i2 = memory[p.label];
 			}
 			Register[p.Rdest] = memo.readWord(i2);
+			break;
+		default:
+			break;
 		}
-		else if (p.command == 0){}
 		currentLine++;
 	}
 	else {
