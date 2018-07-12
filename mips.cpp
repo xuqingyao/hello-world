@@ -135,8 +135,8 @@ void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile(argv[1]);
-	//infile.open("4.s");
+	std::ifstream infile;
+	infile.open("2.s");
 	std::string str, line, tmp;
 	std::string s[3];
 	initKey();
@@ -524,7 +524,7 @@ void EX() {
 				exit(0);
 				break;
 			case 17:
-				system("pause");
+				//system("pause");
 				exit(Register[4]);
 				break;
 			}
