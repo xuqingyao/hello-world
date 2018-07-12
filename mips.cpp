@@ -135,8 +135,8 @@ void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile;
-	infile.open("2.s");
+	std::ifstream infile(argv[1]);
+	//infile.open("2.s");
 	std::string str, line, tmp;
 	std::string s[3];
 	initKey();
