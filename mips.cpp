@@ -3,6 +3,7 @@
 #include <string>
 #include <cmath>
 #include <map>
+#include <queue>
 #include <vector>
 #include "memory.h"
 #include "tokenscanner.h"
@@ -123,21 +124,19 @@ struct dataGroup {
 
 Memory memo;
 std::map<std::string, int> memory;
-//std::vector<std::string> text;
 std::map<std::string, int> textnum;
-//std::vector<std::string> data;
+std::vector<textGroup> text1;
+std::vector<dataGroup> data1;
 int Register[35] = { 0 };
 bool textStore = false, dataStore = false, mainbegin = false;
 int currentLine = 0, datapos = 0, dataLine = 0, textLine = 0;
-std::vector<textGroup> text1;
-std::vector<dataGroup> data1;
 void processData();
 void processText();
 
 int main(int argc, char* argv[]) {
 	Register[29] = 4 * 1024 * 1024;
-	std::ifstream infile(argv[1]);
-	//infile.open("4.s");
+	std::ifstream infile;
+	infile.open("4.s");
 	std::string str, line, tmp;
 	std::string s[3];
 	initKey();
@@ -190,7 +189,9 @@ int main(int argc, char* argv[]) {
 				if ((l.command >= 9 && l.command <= 13) || (l.command >= 18 && l.command <= 29)) {
 					l.Rdest = keyword[s[0]];
 					l.Rscr = keyword[s[1]];
-					if (s[2] == "") {}
+					if (s[2] == "") {
+						l.type = 1;
+					}
 					else if (isNumber(s[2])) {
 						l.type = 1;
 						l.Scr = transToInt(s[2]);
@@ -229,10 +230,12 @@ int main(int argc, char* argv[]) {
 					if (isNumber(s[1])) {
 						l.type = 1;
 						l.Scr = transToInt(s[1]);
+						l.label = s[2];
 					}
-					else
+					else {
 						l.Scr = keyword[s[1]];
-					l.label = s[2];
+						l.label = s[2];
+					}
 				}
 				else if (l.command == 38 || l.command == 51 || l.command == 53) {
 					l.label = s[0];
@@ -262,6 +265,7 @@ int main(int argc, char* argv[]) {
 				}
 				else if (l.command >= 33 && l.command <= 35) {
 					if (i == 2) {
+						l.type = 1;
 						l.Rdest = keyword[s[0]];
 						l.Rscr = keyword[s[1]];
 					}
@@ -269,8 +273,6 @@ int main(int argc, char* argv[]) {
 						l.Rdest = keyword[s[0]];
 				}
 				text1.push_back(l);
-				//if (str[0] == '_')
-				//textnum.insert(std::map<std::string, int> ::value_type(str + ':', textLine));
 				textLine++;
 			}
 		}
@@ -282,10 +284,458 @@ int main(int argc, char* argv[]) {
 	for (currentLine = 0; currentLine < textLine; ) {
 		processText();
 	}
+	getchar();
 	system("pause");
 	return 0;
 }
 
+textGroup p;
+//int Command = 0, ans = 0, ans1 = 0, ans2 = 0, result = 0;
+std::string Str = "";
+struct Mem {
+	textGroup t;
+	int ans = 0, ans1 = 0, ans2 = 0;
+	int Command = 0;
+}M, R;
+void IF() {
+	p = text1[currentLine];
+}
+
+void ID() {
+	M.Command = p.command;
+}
+
+/*struct REG {
+	textGroup T;
+	int ans, ans1, ans2;
+	int Command;
+}R;*/
+void EX() {
+	M.t = p;
+	if (M.Command == 8)
+		mainbegin = true;
+	else if (mainbegin) {
+		switch (M.Command) {
+		case 9://add
+			if (p.type)
+				//Register[p.Rdest] = M.ans;
+				M.ans = Register[p.Rscr] + p.Scr;
+			else
+				M.ans = Register[p.Rscr] + Register[p.Scr];
+			break;
+		case 10://addu
+			if (p.type)
+				M.ans = Register[p.Rscr] + abs(p.Scr);
+			else
+				M.ans = Register[p.Rscr] + abs(Register[p.Scr]);
+			break;
+		case 11://addiu
+			M.ans = Register[p.Rscr] + abs(p.Scr);
+			break;
+		case 12://sub
+			if (p.type)
+				M.ans = Register[p.Rscr] - p.Scr;
+			else
+				M.ans = Register[p.Rscr] - Register[p.Scr];
+			break;
+		case 13://subu
+			if (p.type)
+				M.ans = Register[p.Rscr] - abs(p.Scr);
+			else
+				M.ans = Register[p.Rscr] - abs(Register[p.Scr]);
+			break;
+		case 14://mul
+			if (p.type == 2)
+				M.ans = Register[p.Rscr] * p.Scr;
+			else if (p.type == 3)
+				M.ans = Register[p.Rscr] * Register[p.Scr];
+			else if (p.type == 4) {
+				M.ans1 = (Register[p.Rdest] * p.Scr) / 2 ^ 32;
+				M.ans2 = (Register[p.Rdest] * p.Scr) % 2 ^ 32;
+			}
+			else {
+				M.ans1 = (Register[p.Rdest] * Register[p.Scr]) / 2 ^ 32;
+				M.ans2 = (Register[p.Rdest] * Register[p.Scr]) % 2 ^ 32;
+			}
+			break;
+		case 15://mulu
+			if (p.type == 2)
+				M.ans = Register[p.Rscr] * abs(p.Scr);
+			else if (p.type == 3)
+				M.ans = Register[p.Rscr] * abs(Register[p.Scr]);
+			else if (p.type == 4) {
+				M.ans1 = (Register[p.Rdest] * abs(p.Scr)) / 2 ^ 32;
+				M.ans2 = (Register[p.Rdest] * abs(p.Scr)) % 2 ^ 32;
+			}
+			else {
+				M.ans1 = (Register[p.Rdest] * abs(Register[p.Scr])) / 2 ^ 32;
+				M.ans2 = (Register[p.Rdest] * abs(Register[p.Scr])) % 2 ^ 32;
+			}
+			break;
+		case 16://div
+			if (p.type == 2)
+				M.ans = Register[p.Rscr] / p.Scr;
+			else if (p.type == 3)
+				M.ans = Register[p.Rscr] / Register[p.Scr];
+			else if (p.type == 4) {
+				M.ans1 = Register[p.Rdest] % p.Scr;
+				M.ans2 = Register[p.Rdest] / p.Scr;
+			}
+			else {
+				M.ans1 = Register[p.Rdest] % Register[p.Scr];
+				M.ans2 = Register[p.Rdest] / Register[p.Scr];
+			}
+			break;
+		case 17://divu
+			if (p.type == 2)
+				M.ans = Register[p.Rscr] / abs(p.Scr);
+			else if (p.type == 3)
+				M.ans = Register[p.Rscr] / abs(Register[p.Scr]);
+			else if (p.type == 4) {
+				M.ans1 = Register[p.Rdest] % abs(p.Scr);
+				M.ans2 = Register[p.Rdest] / abs(p.Scr);
+			}
+			else {
+				M.ans1 = Register[p.Rdest] % abs(Register[p.Scr]);
+				M.ans2 = Register[p.Rdest] / abs(Register[p.Scr]);
+			}
+			break;
+		case 18://xor
+			if (p.type)
+				M.ans = Register[p.Rscr] ^ p.Scr;
+			else
+				M.ans = Register[p.Rscr] ^ Register[p.Scr];
+			break;
+		case 19://xoru
+			if (p.type)
+				M.ans = Register[p.Rscr] ^ abs(p.Scr);
+			else
+				M.ans = Register[p.Rscr] ^ abs(Register[p.Scr]);
+			break;
+		case 20://neg
+			M.ans = -Register[p.Rscr];
+			break;
+		case 21://negu
+			M.ans = ~abs(Register[p.Rscr]);
+			break;
+		case 22://rem
+			if (p.type)
+				M.ans = Register[p.Rscr] % p.Scr;
+			else
+				M.ans = Register[p.Rscr] % Register[p.Scr];
+			break;
+		case 23://remu
+			if (p.type)
+				M.ans = Register[p.Rscr] % abs(p.Scr);
+			else
+				M.ans = Register[p.Rscr] % abs(Register[p.Scr]);
+			break;
+		case 24://seq
+			if (p.type)
+				M.ans = (Register[p.Rscr] == p.Scr);
+			else
+				M.ans = (Register[p.Rscr] == Register[p.Scr]);
+			break;
+		case 25://sge
+			if (p.type)
+				M.ans = (Register[p.Rscr] >= p.Scr);
+			else
+				M.ans = (Register[p.Rscr] >= Register[p.Scr]);
+			break;
+		case 26://sgt
+			if (p.type)
+				M.ans = (Register[p.Rscr] > p.Scr);
+			else
+				M.ans = (Register[p.Rscr] > Register[p.Scr]);
+			break;
+		case 27://sle
+			if (p.type)
+				M.ans = (Register[p.Rscr] <= p.Scr);
+			else
+				M.ans = (Register[p.Rscr] <= Register[p.Scr]);
+			break;
+		case 28://slt
+			if (p.type)
+				M.ans = (Register[p.Rscr] < p.Scr);
+			else
+				M.ans = (Register[p.Rscr] < Register[p.Scr]);
+			break;
+		case 29://sne
+			if (p.type)
+				M.ans = (Register[p.Rscr] != p.Scr);
+			else
+				M.ans = (Register[p.Rscr] != Register[p.Scr]);
+			break;
+		case 30://sb
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else
+				M.ans = memory[p.label];
+			//memo.save(M.ans, 1, Register[p.Rdest]);
+			break;
+		case 31://sh
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else
+				M.ans = memory[p.label];
+			//memo.save(M.ans, 2, Register[p.Rdest]);
+			break;
+		case 32://sw
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else
+				M.ans = memory[p.label];
+			//memo.save(M.ans, 4, Register[p.Rdest]);
+			break;
+		case 33:
+			M.ans = Register[p.Rscr];
+			break;
+		case 34:
+			M.ans = Register[32];
+			break;
+		case 35:
+			M.ans = Register[33];
+			break;
+		case 37:
+			switch (Register[2]) {
+			case 1:
+				std::cout << Register[4];
+				break;
+			case 4:
+				//memo.print(Register[4]);
+				break;
+			case 5:
+				std::cin >> M.ans;
+				//Register[2] = M.ans;
+				break;
+			case 8:
+				std::cin >> Str;
+				M.ans = Str.length();
+				//memo.saveString(Str, Register[4], tmp1.length());
+				//Register[5] = Str.length();
+				break;
+			case 9:
+				//Register[2] = memo.space(Register[4]);
+				break;
+			case 10:
+				exit(0);
+				break;
+			case 17:
+				system("pause");
+				exit(Register[4]);
+				break;
+			}
+			break;
+		case 38:
+			currentLine = textnum[p.label];
+			break;
+		case 39:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] == M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 40:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] != M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 41:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] >= M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 42:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] <= M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 43:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] > M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 44:
+			if (p.type) {
+				M.ans = p.Scr;
+			}
+			else
+				M.ans = Register[p.Scr];
+			if (Register[p.Rscr] < M.ans)
+				currentLine = textnum[p.label];
+			break;
+		case 45:
+			if (Register[p.Rscr] == 0)
+				currentLine = textnum[p.label];
+			break;
+		case 46:
+			if (Register[p.Rscr] != 0)
+				currentLine = textnum[p.label];
+			break;
+		case 47:
+			if (Register[p.Rscr] <= 0)
+				currentLine = textnum[p.label];
+			break;
+		case 48:
+			if (Register[p.Rscr] >= 0)
+				currentLine = textnum[p.label];
+			break;
+		case 49:
+			if (Register[p.Rscr] > 0)
+				currentLine = textnum[p.label];
+			break;
+		case 50:
+			if (Register[p.Rscr] < 0)
+				currentLine = textnum[p.label];
+			break;
+		case 51:
+			currentLine = textnum[p.label];
+			break;
+		case 52:
+			currentLine = Register[p.Rscr];
+			currentLine--;
+			break;
+		case 53:
+			//Register[31] = currentLine + 1;
+			M.ans = currentLine + 1;
+			currentLine = textnum[p.label];
+			break;
+		case 54:
+			//Register[31] = currentLine + 1;
+			M.ans = currentLine + 1;
+			currentLine = Register[p.Rscr];
+			currentLine--;
+			break;
+		case 55:
+			//Register[p.Rdest] = p.Scr;
+			M.ans = p.Scr;
+			break;
+		case 56:
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else {
+				M.ans = memory[p.label];
+			}
+			//Register[p.Rdest] = M.ans;
+			break;
+		case 57:
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else {
+				M.ans = memory[p.label];
+			}
+			//Register[p.Rdest] = memo.readByte(M.ans);
+			break;
+		case 58:
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else {
+				M.ans = memory[p.label];
+			}
+			//Register[p.Rdest] = memo.readHalf(M.ans);
+			break;
+		case 59:
+			if (p.type == 6) {
+				M.ans = Register[p.Rscr] + p.address;
+			}
+			else {
+				M.ans = memory[p.label];
+			}
+			//Register[p.Rdest] = memo.readWord(M.ans);
+			break;
+		default:
+			break;
+		}
+	}
+}
+void MA() {
+	R = M;
+	if (mainbegin) {
+		switch (M.Command) {
+		case 30:
+			memo.save(M.ans, 1, Register[M.t.Rdest]);
+			break;
+		case 31:
+			memo.save(M.ans, 2, Register[M.t.Rdest]);
+			break;
+		case 32:
+			memo.save(M.ans, 4, Register[M.t.Rdest]);
+			break;
+		case 37:
+			if (Register[2] == 4)
+				memo.print(Register[4]);
+			else if (Register[2] == 8)
+				memo.saveString(Str, Register[4], M.ans);
+			else if (Register[2] == 9)
+				R.ans = memo.space(Register[4]);
+			break;
+		case 57:
+			R.ans = memo.readByte(M.ans);
+			break;
+		case 58:
+			R.ans = memo.readHalf(M.ans);
+			break;
+		case 59:
+			R.ans = memo.readWord(M.ans);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+void WB() {
+	if (mainbegin) {
+		if ((R.Command >= 9 && R.Command <= 13) || (R.Command >= 18 && R.Command <= 29) || (R.Command >= 55 && R.Command <= 59) || (R.Command >= 33 && R.Command <= 35))
+			Register[R.t.Rdest] = R.ans;
+		else if (R.Command >= 14 && R.Command <= 17) {
+			if (R.t.type == 4 || R.t.type == 5) {
+				Register[32] = R.ans1;
+				Register[33] = R.ans2;
+			}
+			else
+				Register[R.t.Rdest] = R.ans;
+		}
+		else if (R.Command == 53 || R.Command == 54)
+			Register[31] = R.ans;
+		/*else if (R.Command >= 57 && R.Command <= 59)
+			Register[R.t.Rdest] = R.ans;*/
+		else if (R.Command == 37) {
+			if (Register[2] == 5)
+				Register[2] = R.ans;
+			else if (Register[2] == 8)
+				//memo.saveString(Str, Register[4], Str.length());
+				Register[5] = R.ans;
+			else if (Register[2] == 9)
+				Register[2] = R.ans;
+		}
+	}
+}
 
 void processData() {
 	dataGroup p = data1[currentLine];
@@ -335,370 +785,15 @@ void processData() {
 	}
 	currentLine++;
 }
+
 void processText() {
-	textGroup p = text1[currentLine];
-	std::string tmp1, tmp2, tmp3;
-	int i1, i2;
-	char c1;
-	short s1;
-	if (p.command == 8) {
-		mainbegin = true;
-		currentLine++;
-	}
-	else if (mainbegin) {
-		switch (p.command) {
-		case 9:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] + p.Scr;
-			else
-				Register[p.Rdest] = Register[p.Rscr] + Register[p.Scr];
-			break;
-		case 10:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
-			else
-				Register[p.Rdest] = Register[p.Rscr] + abs(Register[p.Scr]);
-			break;
-		case 11:
-			Register[p.Rdest] = Register[p.Rscr] + abs(p.Scr);
-			break;
-		case 12:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] - p.Scr;
-			else
-				Register[p.Rdest] = Register[p.Rscr] - Register[p.Scr];
-			break;
-		case 13:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] - abs(p.Scr);
-			else
-				Register[p.Rdest] = Register[p.Rscr] - abs(Register[p.Scr]);
-			break;
-		case 14:
-			if (p.type == 2)
-				Register[p.Rdest] = Register[p.Rscr] * p.Scr;
-			else if (p.type == 3)
-				Register[p.Rdest] = Register[p.Rscr] * Register[p.Scr];
-			else if (p.type == 4) {
-				Register[32] = (Register[p.Rdest] * p.Scr) / 2 ^ 32;
-				Register[33] = (Register[p.Rdest] * p.Scr) % 2 ^ 32;
-			}
-			else {
-				Register[32] = (Register[p.Rdest] * Register[p.Scr]) / 2 ^ 32;
-				Register[33] = (Register[p.Rdest] * Register[p.Scr]) % 2 ^ 32;
-			}
-			break;
-		case 15:
-			if (p.type == 2)
-				Register[p.Rdest] = Register[p.Rscr] * abs(p.Scr);
-			else if (p.type == 3)
-				Register[p.Rdest] = Register[p.Rscr] * abs(Register[p.Scr]);
-			else if (p.type == 4) {
-				Register[32] = (Register[p.Rdest] * abs(p.Scr)) / 2 ^ 32;
-				Register[33] = (Register[p.Rdest] * abs(p.Scr)) % 2 ^ 32;
-			}
-			else {
-				Register[32] = (Register[p.Rdest] * abs(Register[p.Scr])) / 2 ^ 32;
-				Register[33] = (Register[p.Rdest] * abs(Register[p.Scr])) % 2 ^ 32;
-			}
-			break;
-		case 16:
-			if (p.type == 2)
-				Register[p.Rdest] = Register[p.Rscr] / p.Scr;
-			else if (p.type == 3)
-				Register[p.Rdest] = Register[p.Rscr] / Register[p.Scr];
-			else if (p.type == 4) {
-				Register[32] = Register[p.Rdest] % p.Scr;
-				Register[33] = Register[p.Rdest] / p.Scr;
-			}
-			else {
-				Register[32] = Register[p.Rdest] % Register[p.Scr];
-				Register[33] = Register[p.Rdest] / Register[p.Scr];
-			}
-			break;
-		case 17:
-			if (p.type == 2)
-				Register[p.Rdest] = Register[p.Rscr] / abs(p.Scr);
-			else if (p.type == 3)
-				Register[p.Rdest] = Register[p.Rscr] / abs(Register[p.Scr]);
-			else if (p.type == 4) {
-				Register[32] = Register[p.Rdest] % abs(p.Scr);
-				Register[33] = Register[p.Rdest] / abs(p.Scr);
-			}
-			else {
-				Register[32] = Register[p.Rdest] % abs(Register[p.Scr]);
-				Register[33] = Register[p.Rdest] / abs(Register[p.Scr]);
-			}
-			break;
-		case 18:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] ^ p.Scr;
-			else
-				Register[p.Rdest] = Register[p.Rscr] ^ Register[p.Scr];
-			break;
-		case 19:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] ^ abs(p.Scr);
-			else
-				Register[p.Rdest] = Register[p.Rscr] ^ abs(Register[p.Scr]);
-			break;
-		case 20:
-			Register[p.Rdest] = -Register[p.Rscr];
-			break;
-		case 21:
-			Register[p.Rdest] = ~abs(Register[p.Rscr]);
-			break;
-		case 22:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] % p.Scr;
-			else
-				Register[p.Rdest] = Register[p.Rscr] % Register[p.Scr];
-			break;
-		case 23:
-			if (p.type)
-				Register[p.Rdest] = Register[p.Rscr] % abs(p.Scr);
-			else
-				Register[p.Rdest] = Register[p.Rscr] % abs(Register[p.Scr]);
-			break;
-		case 24:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] == p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] == Register[p.Scr]);
-			break;
-		case 25:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] >= p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] >= Register[p.Scr]);
-			break;
-		case 26:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] > p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] > Register[p.Scr]);
-			break;
-		case 27:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] <= p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] <= Register[p.Scr]);
-			break;
-		case 28:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] < p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] < Register[p.Scr]);
-			break;
-		case 29:
-			if (p.type)
-				Register[p.Rdest] = (Register[p.Rscr] != p.Scr);
-			else
-				Register[p.Rdest] = (Register[p.Rscr] != Register[p.Scr]);
-			break;
-		case 30:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else
-				i2 = memory[p.label];
-			memo.save(i2, 1, Register[p.Rdest]);
-			break;
-		case 31:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else
-				i2 = memory[p.label];
-			memo.save(i2, 2, Register[p.Rdest]);
-			break;
-		case 32:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else
-				i2 = memory[p.label];
-			memo.save(i2, 4, Register[p.Rdest]);
-			break;
-		case 33:
-			Register[p.Rdest] = Register[p.Rscr];
-			break;
-		case 34:
-			Register[p.Rdest] = Register[32];
-			break;
-		case 35:
-			Register[p.Rdest] = Register[33];
-			break;
-		case 37:
-			switch (Register[2]) {
-			case 1:
-				std::cout << Register[4];
-				break;
-			case 4:
-				memo.print(Register[4]);
-				break;
-			case 5:
-				std::cin >> i1;
-				Register[2] = i1;
-				break;
-			case 8:
-				std::cin >> tmp1;
-				memo.saveString(tmp1, Register[4], tmp1.length());
-				Register[5] = tmp1.length();
-				break;
-			case 9:
-				Register[2] = memo.space(Register[4]);
-				break;
-			case 10:
-				exit(0);
-				break;
-			case 17:
-				exit(Register[4]);
-				break;
-			}
-			break;
-		case 38:
-			currentLine = textnum[p.label];
-			break;
-		case 39:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] == i1)
-				currentLine = textnum[p.label];
-			break;
-		case 40:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] != i1)
-				currentLine = textnum[p.label];
-			break;
-		case 41:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] >= i1)
-				currentLine = textnum[p.label];
-			break;
-		case 42:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] <= i1)
-				currentLine = textnum[p.label];
-			break;
-		case 43:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] > i1)
-				currentLine = textnum[p.label];
-			break;
-		case 44:
-			if (p.type) {
-				i1 = p.Scr;
-			}
-			else
-				i1 = Register[p.Scr];
-			if (Register[p.Rscr] < i1)
-				currentLine = textnum[p.label];
-			break;
-		case 45:
-			if (Register[p.Rscr] == 0)
-				currentLine = textnum[p.label];
-			break;
-		case 46:
-			if (Register[p.Rscr] != 0)
-				currentLine = textnum[p.label];
-			break;
-		case 47:
-			if (Register[p.Rscr] <= 0)
-				currentLine = textnum[p.label];
-			break;
-		case 48:
-			if (Register[p.Rscr] >= 0)
-				currentLine = textnum[p.label];
-			break;
-		case 49:
-			if (Register[p.Rscr] > 0)
-				currentLine = textnum[p.label];
-			break;
-		case 50:
-			if (Register[p.Rscr] < 0)
-				currentLine = textnum[p.label];
-			break;
-		case 51:
-			currentLine = textnum[p.label];
-			break;
-		case 52:
-			currentLine = Register[p.Rscr];
-			currentLine--;
-			break;
-		case 53:
-			Register[31] = currentLine + 1;
-			currentLine = textnum[p.label];
-			break;
-		case 54:
-			Register[31] = currentLine + 1;
-			currentLine = Register[p.Rscr];
-			currentLine--;
-			break;
-		case 55:
-			Register[p.Rdest] = p.Scr;
-			break;
-		case 56:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else {
-				i2 = memory[p.label];
-			}
-			Register[p.Rdest] = i2;
-			break;
-		case 57:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else {
-				i2 = memory[p.label];
-			}
-			Register[p.Rdest] = memo.readByte(i2);
-			break;
-		case 58:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else {
-				i2 = memory[p.label];
-			}
-			Register[p.Rdest] = memo.readHalf(i2);
-			break;
-		case 59:
-			if (p.type == 6) {
-				i2 = Register[p.Rscr] + p.address;
-			}
-			else {
-				i2 = memory[p.label];
-			}
-			Register[p.Rdest] = memo.readWord(i2);
-			break;
-		default:
-			break;
-		}
-		currentLine++;
-	}
-	else {
-		currentLine++;
-	}
+	//M.Command = ans = ans1 = ans2 = result = 0;
+	M.Command = M.ans = M.ans1 = M.ans2 = 0;
+	Str = "";
+	IF();
+	ID();
+	EX();
+	MA();
+	WB();
+	currentLine++;
 }
