@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <cstring>
 #include <string>
 
 class Memory {
@@ -12,8 +13,7 @@ private:
 public:
 	Memory() {
 		memory = new unsigned char[4 * 1024 * 1024];
-		for (int i = 0; i < 4 * 1024 * 1024; ++i)
-			memory[i] = '\0';
+		memset(memory, 0, 4 * 1024 * 1024);
 		pos = 0;
 	}
 	~Memory() {
