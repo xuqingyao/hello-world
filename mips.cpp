@@ -45,7 +45,7 @@ void initLabel() {
 	Label["bgtz"] = 49; Label["bltz"] = 50; Label["j"] = 51; Label["jr"] = 52;
 	Label["jal"] = 53; Label["jalr"] = 54; Label["li"] = 55; Label["la"] = 56;
 	Label["lb"] = 57; Label["lh"] = 58; Label["lw"] = 59;
-	
+
 }
 bool isNumber(std::string &str) {
 	return ((str[0] == '-' && (str[1] >= '0' && str[1] <= '9')) || (str[0] >= '0' && str[0] <= '9'));
@@ -87,7 +87,7 @@ struct textGroup {
 	std::string label;
 	textGroup() {
 		Rdest = Rscr = Scr = address = command = -1;
-		type = 0;//type == 1 锟斤拷锟斤拷 number | type == 0 锟斤拷锟斤拷 Register | type == 2 锟斤拷锟斤拷 mul/div (3, n) | type == 3 锟斤拷锟斤拷 mul/div (3, r) | 
+		type = 0;
 		label = "";
 	}
 	~textGroup() {}
@@ -138,15 +138,15 @@ void processText();
 
 std::string debug_map(int x)
 {
-	for(auto i : Label)
-		if(i.second == x)
+	for (auto i : Label)
+		if (i.second == x)
 			return i.first;
 	return "";
 }
 
 int main(int argc, char **argv) {
 	//freopen("test.log", "w", stdout);
-//	freopen("4.in", "r", stdin);
+	//	freopen("4.in", "r", stdin);
 	Register[29] = 4 * 1024 * 1024;
 	std::ifstream infile;
 	infile.open(argv[1]);
@@ -189,116 +189,115 @@ int main(int argc, char **argv) {
 			else if (textStore) {
 				s[0] = s[1] = s[2] = "";
 				struct textGroup l;
-				if (str[0] == '_') {
-					l.command = 0;
-					textnum.insert(std::map<std::string, int> ::value_type(str, textLine));
-				}
-				else
-					l.command = Label[str];
-				int i = 0;
-				while (scanner.hasMoreToken()) {
-					s[i++] = scanner.nextToken();
-				}
-				if ((l.command >= 9 && l.command <= 13) || (l.command >= 18 && l.command <= 29)) {
-					l.Rdest = keyword[s[0]];
-					l.Rscr = keyword[s[1]];
-					if (s[2] == "") {
-						l.type = 1;
-					}
-					else if (isNumber(s[2])) {
-						l.type = 1;
-						l.Scr = transToInt(s[2]);
+					if (str[0] == '_' || str == "") {
+						l.command = 0;
+						textnum.insert(std::map<std::string, int> ::value_type(str, textLine));
 					}
 					else {
-						l.Scr = keyword[s[2]];
-					}
-				}
-				else if (l.command >= 14 && l.command <= 17) {
-					if (i == 3) {
-						l.Rdest = keyword[s[0]];
-						l.Rscr = keyword[s[1]];
-						if (isNumber(s[2])) {
-							l.type = 2;
-							l.Scr = transToInt(s[2]);
+						l.command = Label[str];
+						int i = 0;
+						while (scanner.hasMoreToken()) {
+							s[i++] = scanner.nextToken();
 						}
-						else {
-							l.type = 3;
-							l.Scr = keyword[s[2]];
+						if ((l.command >= 9 && l.command <= 13) || (l.command >= 18 && l.command <= 29)) {
+							l.Rdest = keyword[s[0]];
+							l.Rscr = keyword[s[1]];
+							if (s[2] == "") {
+								l.type = 1;
+							}
+							else if (isNumber(s[2])) {
+								l.type = 1;
+								l.Scr = transToInt(s[2]);
+							}
+							else {
+								l.Scr = keyword[s[2]];
+							}
 						}
-					}
-					else {
-						l.Rdest = keyword[s[0]];
-						if (isNumber(s[1])) {
-							l.type = 4;
+						else if (l.command >= 14 && l.command <= 17) {
+							if (i == 3) {
+								l.Rdest = keyword[s[0]];
+								l.Rscr = keyword[s[1]];
+								if (isNumber(s[2])) {
+									l.type = 2;
+									l.Scr = transToInt(s[2]);
+								}
+								else {
+									l.type = 3;
+									l.Scr = keyword[s[2]];
+								}
+							}
+							else {
+								l.Rdest = keyword[s[0]];
+								if (isNumber(s[1])) {
+									l.type = 4;
+									l.Scr = transToInt(s[1]);
+								}
+								else {
+									l.type = 5;
+									l.Scr = keyword[s[1]];
+								}
+							}
+						}
+						else if (l.command >= 39 && l.command <= 44) {
+							l.Rscr = keyword[s[0]];
+							if (isNumber(s[1])) {
+								l.type = 1;
+								l.Scr = transToInt(s[1]);
+								l.label = s[2];
+							}
+							else {
+								l.Scr = keyword[s[1]];
+								l.label = s[2];
+							}
+						}
+						else if (l.command == 38 || l.command == 51 || l.command == 53) {
+							l.label = s[0];
+						}
+						else if (l.command == 52 || l.command == 54) {
+							l.Rscr = keyword[s[0]];
+						}
+						else if (l.command >= 45 && l.command <= 50) {
+							l.Rscr = keyword[s[0]];
+							l.label = s[1];
+						}
+						else if ((l.command >= 30 && l.command <= 32) || (l.command >= 56 && l.command <= 59)) {
+							l.Rdest = keyword[s[0]];
+							if (i == 3) {
+								l.type = 6;
+								l.address = transToInt(s[1]);
+								l.Rscr = keyword[s[2]];
+							}
+							else {
+								l.type = 7;
+								l.label = s[1];
+							}
+						}
+						else if (l.command == 55) {
+							l.Rdest = keyword[s[0]];
 							l.Scr = transToInt(s[1]);
 						}
-						else {
-							l.type = 5;
-							l.Scr = keyword[s[1]];
+						else if (l.command >= 33 && l.command <= 35) {
+							if (i == 2) {
+								l.type = 1;
+								l.Rdest = keyword[s[0]];
+								l.Rscr = keyword[s[1]];
+							}
+							else
+								l.Rdest = keyword[s[0]];
 						}
+						text1.push_back(l);
+						textLine++;
 					}
 				}
-				else if (l.command >= 39 && l.command <= 44) {
-					l.Rscr = keyword[s[0]];
-					if (isNumber(s[1])) {
-						l.type = 1;
-						l.Scr = transToInt(s[1]);
-						l.label = s[2];
-					}
-					else {
-						l.Scr = keyword[s[1]];
-						l.label = s[2];
-					}
-				}
-				else if (l.command == 38 || l.command == 51 || l.command == 53) {
-					l.label = s[0];
-				}
-				else if (l.command == 52 || l.command == 54) {
-					l.Rscr = keyword[s[0]];
-				}
-				else if (l.command >= 45 && l.command <= 50) {
-					l.Rscr = keyword[s[0]];
-					l.label = s[1];
-				}
-				else if ((l.command >= 30 && l.command <= 32) || (l.command >= 56 && l.command <= 59)) {
-					l.Rdest = keyword[s[0]];
-					if (i == 3) {
-						l.type = 6;
-						l.address = transToInt(s[1]);
-						l.Rscr = keyword[s[2]];
-					}
-					else {
-						l.type = 7;
-						l.label = s[1];
-					}
-				}
-				else if (l.command == 55) {
-					l.Rdest = keyword[s[0]];
-					l.Scr = transToInt(s[1]);
-				}
-				else if (l.command >= 33 && l.command <= 35) {
-					if (i == 2) {
-						l.type = 1;
-						l.Rdest = keyword[s[0]];
-						l.Rscr = keyword[s[1]];
-					}
-					else
-						l.Rdest = keyword[s[0]];
-				}
-				text1.push_back(l);
-				textLine++;
-			}
+				
 		}
 	}
 	infile.close();
 	for (; currentLine < dataLine;) {
 		processData();
 	}
-	//freopen("2.in", "r", stdin);
 	while (true)
 		processText();
-	//getchar();
-	//system("pause");
 	return 0;
 }
 
@@ -329,13 +328,13 @@ void clearR() {
 	R.Command = R.ans = R.ans1 = R.ans2 = R.pos = R.type = 0;
 }
 void IF() {
-    if (dataLock)
-    {
-        memLock = 0;
-        return;
-    }
+	if (dataLock)
+	{
+		memLock = 0;
+		return;
+	}
 	if (memLock || conLock) {
-        p.command = 0;
+		p.command = 0;
 		return;
 	}
 	p = text1[Register[34]];
@@ -343,563 +342,563 @@ void IF() {
 }
 
 void ID() {
-		N.Command = p.command;
-		N.Rdest = p.Rdest;
-		N.type = p.type;
-		if (N.Command == 0)
-			return;
-		if (mainbegin) {
-			switch (N.Command) {
-			case 9: case 12: case 18: case 22: case 24: case 25: case 26: case 27: case 28: case 29:
-				if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
+	N.Command = p.command;
+	N.Rdest = p.Rdest;
+	N.type = p.type;
+	if (N.Command == 0)
+		return;
+	if (mainbegin) {
+		switch (N.Command) {
+		case 9: case 12: case 18: case 22: case 24: case 25: case 26: case 27: case 28: case 29:
+			if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num1 = Register[p.Rscr];
+			if (p.type)
+				N.num2 = p.Scr;
+			else
+				N.num2 = Register[p.Scr];
+			p.command = 0;
+			break;
+		case 10: case 13: case 19: case 23://addu subu
+			if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num1 = Register[p.Rscr];
+			if (p.type)
+				N.num2 = abs(p.Scr);
+			else
+				N.num2 = abs(Register[p.Scr]);
+			p.command = 0;
+			break;
+		case 11://addiu
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num1 = Register[p.Rscr];
+			N.num2 = abs(p.Scr);
+			p.command = 0;
+			break;
+		case 14: case 16://mul
+			if ((p.type == 2 && regLock[p.Rscr]) || (p.type == 3 && (regLock[p.Rscr] || regLock[p.Scr])) || (p.type == 4 && regLock[p.Rdest]) || (p.type == 5 && (regLock[p.Rdest] || regLock[p.Scr]))) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			if (p.type == 2) {
 				regLock[p.Rdest] ++;
 				N.num1 = Register[p.Rscr];
-				if (p.type)
-					N.num2 = p.Scr;
-				else
-					N.num2 = Register[p.Scr];
-				p.command = 0;
-				break;
-			case 10: case 13: case 19: case 23://addu subu
-				if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
+				N.num2 = p.Scr;
+			}
+			else if (p.type == 3) {
 				regLock[p.Rdest] ++;
 				N.num1 = Register[p.Rscr];
-				if (p.type)
-					N.num2 = abs(p.Scr);
-				else
-					N.num2 = abs(Register[p.Scr]);
-                p.command = 0;
-				break;
-			case 11://addiu
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
+				N.num2 = Register[p.Scr];
+			}
+			else if (p.type == 4) {
+				regLock[32] ++;
+				regLock[33] ++;
+				N.num1 = Register[p.Rdest];
+				N.num2 = p.Scr;
+			}
+			else {
+				regLock[32] ++;
+				regLock[33] ++;
+				N.num1 = Register[p.Rdest];
+				N.num2 = Register[p.Scr];
+			}
+			p.command = 0;
+			break;
+		case 15: case 17://mulu
+			if ((p.type == 2 && regLock[p.Rscr]) || (p.type == 3 && (regLock[p.Rscr] || regLock[p.Scr])) || (p.type == 4 && regLock[p.Rdest]) || (p.type == 5 && (regLock[p.Rdest] || regLock[p.Scr]))) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			if (p.type == 2) {
 				regLock[p.Rdest] ++;
 				N.num1 = Register[p.Rscr];
 				N.num2 = abs(p.Scr);
-                p.command = 0;
-				break;
-			case 14: case 16://mul
-				if ((p.type == 2 && regLock[p.Rscr]) || (p.type == 3 && (regLock[p.Rscr] || regLock[p.Scr])) || (p.type == 4 && regLock[p.Rdest]) || (p.type == 5 && (regLock[p.Rdest] || regLock[p.Scr]))) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				if (p.type == 2) {
-					regLock[p.Rdest] ++;
-					N.num1 = Register[p.Rscr];
-					N.num2 = p.Scr;
-				}
-				else if (p.type == 3) {
-					regLock[p.Rdest] ++;
-					N.num1 = Register[p.Rscr];
-					N.num2 = Register[p.Scr];
-				}
-				else if (p.type == 4) {
-					regLock[32] ++;
-					regLock[33] ++;
-					N.num1 = Register[p.Rdest];
-					N.num2 = p.Scr;
-				}
-				else {
-					regLock[32] ++;
-					regLock[33] ++;
-					N.num1 = Register[p.Rdest];
-					N.num2 = Register[p.Scr];
-				}
-                p.command = 0;
-				break;
-			case 15: case 17://mulu
-				if ((p.type == 2 && regLock[p.Rscr]) || (p.type == 3 && (regLock[p.Rscr] || regLock[p.Scr])) || (p.type == 4 && regLock[p.Rdest]) || (p.type == 5 && (regLock[p.Rdest] || regLock[p.Scr]))) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				if (p.type == 2) {
-					regLock[p.Rdest] ++;
-					N.num1 = Register[p.Rscr];
-					N.num2 = abs(p.Scr);
-				}
-				else if (p.type == 3) {
-					regLock[p.Rdest] ++;
-					N.num1 = Register[p.Rscr];
-					N.num2 = abs(Register[p.Scr]);
-				}
-				else if (p.type == 4) {
-					regLock[32] ++;
-					regLock[33] ++;
-					N.num1 = Register[p.Rdest];
-					N.num2 = abs(p.Scr);
-				}
-				else {
-					regLock[32] ++;
-					regLock[33] ++;
-					N.num1 = Register[p.Rdest];
-					N.num2 = abs(Register[p.Scr]);
-				}
-                p.command = 0;
-				break;
-			case 20://neg
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				N.num = Register[p.Rscr];
-                p.command = 0;
-				break;
-			case 21://negu
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				N.num = abs(Register[p.Rscr]);
-                p.command = 0;
-				break;
-			case 30: case 31: case 32://sb
-				if (regLock[p.Rdest]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				if (p.type == 6) {
-					if (regLock[p.Rscr])
-					{
-						dataLock = 1;
-						N.Command = 0;
-						return;
-					}
-					N.num1 = Register[p.Rscr];
-					N.num2 = p.address;
-				}
-				else
-					N.num1 = memory[p.label];
-				N.num = Register[p.Rdest];
-                p.command = 0;
-				break;
-			case 33:
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				N.num = Register[p.Rscr];
-                p.command = 0;
-				break;
-			case 34:
-				if (regLock[32]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				N.num = Register[32];
-                p.command = 0;
-				break;
-			case 35:
-				if (regLock[33]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				N.num = Register[33];
-                p.command = 0;
-				break;
-			case 37:
-				if (regLock[2] || regLock[4] || (Register[2] == 8 && regLock[5])) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				if (Register[2] == 5 || Register[2] == 9)
-				    regLock[2]++;
-				N.num1 = Register[4];
-				N.num2 = Register[2];
-                p.command = 0;
-				break;
-			case 38:
-				N.num = textnum[p.label] + 1;
-                p.command = 0;
-				break;
-			case 39: case 40: case 41: case 42: case 43: case 44:
-				if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-                conLock = 1;
-				if (p.type) {
-					N.num2 = p.Scr;
-				}
-				else
-					N.num2 = Register[p.Scr];
-				N.num1 = Register[p.Rscr];
-				N.num = textnum[p.label] + 1;
-                p.command = 0;
-				break;
-			case 45: case 46: case 47: case 48: case 49: case 50:
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-                conLock = 1;
-				N.num1 = Register[p.Rscr];
-				N.num = textnum[p.label] + 1;
-                p.command = 0;
-				break;
-			case 51:
-				conLock = 1;
-				N.num = textnum[p.label] + 1;
-                p.command = 0;
-				break;
-			case 52:
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-                conLock = 1;
-				N.num = Register[p.Rscr];
-                p.command = 0;
-				break;
-			case 53:
-				conLock = 1;
-				regLock[31]++;
-				N.num1 = Register[34];
-				N.num2 = textnum[p.label] + 1;
-                p.command = 0;
-				break;
-			case 54:
-				if (regLock[p.Rscr]) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-                conLock = 1;
-                regLock[31]++;
-				N.num1 = Register[34];
-				N.num2 = Register[p.Rscr];
-                p.command = 0;
-				break;
-			case 55:
-				regLock[p.Rdest] ++;
-				N.num = p.Scr;
-                p.command = 0;
-				break;
-			case 56: case 57: case 58: case 59:
-				if (regLock[p.Rscr] && p.type == 6) {
-					dataLock = 1;
-					N.Command = 0;
-					return;
-				}
-				regLock[p.Rdest] ++;
-				if (p.type == 6) {
-					N.num1 = Register[p.Rscr];
-					N.num2 = p.address;
-				}
-				else {
-					N.num = memory[p.label];
-				}
-                p.command = 0;
-				break;
-			default:
-				break;
 			}
+			else if (p.type == 3) {
+				regLock[p.Rdest] ++;
+				N.num1 = Register[p.Rscr];
+				N.num2 = abs(Register[p.Scr]);
+			}
+			else if (p.type == 4) {
+				regLock[32] ++;
+				regLock[33] ++;
+				N.num1 = Register[p.Rdest];
+				N.num2 = abs(p.Scr);
+			}
+			else {
+				regLock[32] ++;
+				regLock[33] ++;
+				N.num1 = Register[p.Rdest];
+				N.num2 = abs(Register[p.Scr]);
+			}
+			p.command = 0;
+			break;
+		case 20://neg
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num = Register[p.Rscr];
+			p.command = 0;
+			break;
+		case 21://negu
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num = abs(Register[p.Rscr]);
+			p.command = 0;
+			break;
+		case 30: case 31: case 32://sb
+			if (regLock[p.Rdest]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			if (p.type == 6) {
+				if (regLock[p.Rscr])
+				{
+					dataLock = 1;
+					N.Command = 0;
+					return;
+				}
+				N.num1 = Register[p.Rscr];
+				N.num2 = p.address;
+			}
+			else
+				N.num1 = memory[p.label];
+			N.num = Register[p.Rdest];
+			p.command = 0;
+			break;
+		case 33:
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num = Register[p.Rscr];
+			p.command = 0;
+			break;
+		case 34:
+			if (regLock[32]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num = Register[32];
+			p.command = 0;
+			break;
+		case 35:
+			if (regLock[33]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			N.num = Register[33];
+			p.command = 0;
+			break;
+		case 37:
+			if (regLock[2] || regLock[4] || (Register[2] == 8 && regLock[5])) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			if (Register[2] == 5 || Register[2] == 9)
+				regLock[2]++;
+			N.num1 = Register[4];
+			N.num2 = Register[2];
+			p.command = 0;
+			break;
+		case 38:
+			N.num = textnum[p.label];
+			p.command = 0;
+			break;
+		case 39: case 40: case 41: case 42: case 43: case 44:
+			if (regLock[p.Rscr] || (!p.type && regLock[p.Scr])) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			conLock = 1;
+			if (p.type) {
+				N.num2 = p.Scr;
+			}
+			else
+				N.num2 = Register[p.Scr];
+			N.num1 = Register[p.Rscr];
+			N.num = textnum[p.label];
+			p.command = 0;
+			break;
+		case 45: case 46: case 47: case 48: case 49: case 50:
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			conLock = 1;
+			N.num1 = Register[p.Rscr];
+			N.num = textnum[p.label];
+			p.command = 0;
+			break;
+		case 51:
+			conLock = 1;
+			N.num = textnum[p.label];
+			p.command = 0;
+			break;
+		case 52:
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			conLock = 1;
+			N.num = Register[p.Rscr];
+			p.command = 0;
+			break;
+		case 53:
+			conLock = 1;
+			regLock[31]++;
+			N.num1 = Register[34];
+			N.num2 = textnum[p.label];
+			p.command = 0;
+			break;
+		case 54:
+			if (regLock[p.Rscr]) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			conLock = 1;
+			regLock[31]++;
+			N.num1 = Register[34];
+			N.num2 = Register[p.Rscr];
+			p.command = 0;
+			break;
+		case 55:
+			regLock[p.Rdest] ++;
+			N.num = p.Scr;
+			p.command = 0;
+			break;
+		case 56: case 57: case 58: case 59:
+			if (regLock[p.Rscr] && p.type == 6) {
+				dataLock = 1;
+				N.Command = 0;
+				return;
+			}
+			regLock[p.Rdest] ++;
+			if (p.type == 6) {
+				N.num1 = Register[p.Rscr];
+				N.num2 = p.address;
+			}
+			else {
+				N.num = memory[p.label];
+			}
+			p.command = 0;
+			break;
+		default:
+			break;
 		}
 	}
+}
 
 void EX() {
-		M.Command = N.Command;
-		M.Rdest = N.Rdest;
-		M.type = N.type;
-		if (M.Command == 0)
-			return;
-		else if (M.Command == 8)
-			mainbegin = true;
-		else if (mainbegin) {
-			switch (M.Command) {
-			case 9: case 10: case 11:
+	M.Command = N.Command;
+	M.Rdest = N.Rdest;
+	M.type = N.type;
+	if (M.Command == 0)
+		return;
+	else if (M.Command == 8)
+		mainbegin = true;
+	else if (mainbegin) {
+		switch (M.Command) {
+		case 9: case 10: case 11:
+			M.ans = N.num1 + N.num2;
+			break;
+		case 12: case 13://sub
+			M.ans = N.num1 - N.num2;
+			break;
+		case 14: case 15://mul
+			if (N.type == 2 || N.type == 3)
+				M.ans = N.num1 * N.num2;
+			else {
+				M.ans1 = (N.num1 * N.num2) / 2 ^ 32;
+				M.ans2 = (N.num1 * N.num2) % 2 ^ 32;
+			}
+			break;
+		case 16: case 17://div
+			if (N.type == 2 || N.type == 3)
+				M.ans = N.num1 / N.num2;
+			else {
+				M.ans1 = (N.num1 % N.num2);
+				M.ans2 = (N.num1 / N.num2);
+			}
+			break;
+		case 18: case 19://xor
+			M.ans = N.num1 ^ N.num2;
+			break;
+		case 20://neg
+			M.ans = -N.num;
+			break;
+		case 21://negu
+			M.ans = ~N.num;
+			break;
+		case 22: case 23://rem
+			M.ans = N.num1 % N.num2;
+			break;
+		case 24://seq
+			M.ans = N.num1 == N.num2;
+			break;
+		case 25://sge
+			M.ans = N.num1 >= N.num2;
+			break;
+		case 26://sgt
+			M.ans = N.num1 > N.num2;
+			break;
+		case 27://sle
+			M.ans = N.num1 <= N.num2;
+			break;
+		case 28://slt
+			M.ans = N.num1 < N.num2;
+			break;
+		case 29://sne
+			M.ans = N.num1 != N.num2;
+			break;
+		case 30: case 31: case 32://sb
+			if (N.type == 6) {
 				M.ans = N.num1 + N.num2;
-				break;
-			case 12: case 13://sub
-				M.ans = N.num1 - N.num2;
-				break;
-			case 14: case 15://mul
-				if (N.type == 2 || N.type == 3)
-					M.ans = N.num1 * N.num2;
-				else {
-					M.ans1 = (N.num1 * N.num2) / 2 ^ 32;
-					M.ans2 = (N.num1 * N.num2) % 2 ^ 32;
-				}
-				break;
-			case 16: case 17://div
-				if (N.type == 2 || N.type == 3)
-					M.ans = N.num1 / N.num2;
-				else {
-					M.ans1 = (N.num1 % N.num2);
-					M.ans2 = (N.num1 / N.num2);
-				}
-				break;
-			case 18: case 19://xor
-				M.ans = N.num1 ^ N.num2;
-				break;
-			case 20://neg
-				M.ans = -N.num;
-				break;
-			case 21://negu
-				M.ans = ~N.num;
-				break;
-			case 22: case 23://rem
-				M.ans = N.num1 % N.num2;
-				break;
-			case 24://seq
-				M.ans = N.num1 == N.num2;
-				break;
-			case 25://sge
-				M.ans = N.num1 >= N.num2;
-				break;
-			case 26://sgt
-				M.ans = N.num1 > N.num2;
-				break;
-			case 27://sle
-				M.ans = N.num1 <= N.num2;
-				break;
-			case 28://slt
-				M.ans = N.num1 < N.num2;
-				break;
-			case 29://sne
-				M.ans = N.num1 != N.num2;
-				break;
-			case 30: case 31: case 32://sb
-				if (N.type == 6) {
-					M.ans = N.num1 + N.num2;
-				}
-				else
-					M.ans = N.num1;
-				M.pos = N.num;
-				break;
-			case 33: case 34: case 35:
-				M.ans = N.num;
-				break;
-			case 37:
-				switch (N.num2) {
-				case 1:
-					std::cout << N.num1;
-					break;
-				case 4:
-					//memo.print(Register[4]);
-					M.pos = N.num1;
-					break;
-				case 5:
-					std::cin >> M.ans;
-					//Register[2] = M.ans;
-					break;
-				case 8:
-					std::cin >> Str;
-					M.ans = Str.length();
-					M.pos = N.num1;
-					//memo.saveString(Str, Register[4], tmp1.length());
-					//Register[5] = Str.length();
-					break;
-				case 9:
-					M.pos = N.num1;
-					//Register[2] = memo.space(Register[4]);
-					break;
-				case 10:
-					exit(0);
-					break;
-				case 17:
-					//system("pause");
-					exit(N.num1);
-					break;
-				}
-				break;
-			case 38:
-				Register[34] = N.num;
-				conLock = 0;
-				//conLock = 1;
-				break;
-			case 39:
-				if (N.num1 == N.num2) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 40:
-				if (N.num1 != N.num2) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 41:
-				if (N.num1 >= N.num2)
-					Register[34] = N.num;
-				conLock = 0;
-				break;
-			case 42:
-				if (N.num1 <= N.num2) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 43:
-				if (N.num1 > N.num2) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 44:
-				if (N.num1 < N.num2) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 45:
-				if (N.num1 == 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 46:
-				if (N.num1 != 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 47:
-				if (N.num1 <= 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 48:
-				if (N.num1 >= 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 49:
-				if (N.num1 > 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 50:
-				if (N.num1 < 0) {
-					Register[34] = N.num;
-					//conLock = 1;
-				}
-				conLock = 0;
-				break;
-			case 51: case 52:
-				Register[34] = N.num;
-				conLock = 0;
-				//conLock = 1;
-				break;
-			case 53: case 54:
-				//Register[31] = currentLine + 1;
+			}
+			else
 				M.ans = N.num1;
-				Register[34] = N.num2;
-				conLock = 0;
-				//conLock = 1;
+			M.pos = N.num;
+			break;
+		case 33: case 34: case 35:
+			M.ans = N.num;
+			break;
+		case 37:
+			switch (N.num2) {
+			case 1:
+				std::cout << N.num1;
 				break;
-			case 55:
-				//Register[p.Rdest] = p.Scr;
-				M.ans = N.num;
+			case 4:
+				//memo.print(Register[4]);
+				M.pos = N.num1;
 				break;
-			case 56: case 57: case 58: case 59:
-				if (N.type == 6) {
-					M.ans = N.num1 + N.num2;
-				}
-				else {
-					M.ans = N.num;
-				}
-				//Register[p.Rdest] = M.ans;
+			case 5:
+				std::cin >> M.ans;
+				//Register[2] = M.ans;
 				break;
-			default:
+			case 8:
+				std::cin >> Str;
+				M.ans = Str.length();
+				M.pos = N.num1;
+				//memo.saveString(Str, Register[4], tmp1.length());
+				//Register[5] = Str.length();
+				break;
+			case 9:
+				M.pos = N.num1;
+				//Register[2] = memo.space(Register[4]);
+				break;
+			case 10:
+				exit(0);
+				break;
+			case 17:
+				//system("pause");
+				exit(N.num1);
 				break;
 			}
+			break;
+		case 38:
+			Register[34] = N.num;
+			conLock = 0;
+			//conLock = 1;
+			break;
+		case 39:
+			if (N.num1 == N.num2) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 40:
+			if (N.num1 != N.num2) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 41:
+			if (N.num1 >= N.num2)
+				Register[34] = N.num;
+			conLock = 0;
+			break;
+		case 42:
+			if (N.num1 <= N.num2) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 43:
+			if (N.num1 > N.num2) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 44:
+			if (N.num1 < N.num2) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 45:
+			if (N.num1 == 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 46:
+			if (N.num1 != 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 47:
+			if (N.num1 <= 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 48:
+			if (N.num1 >= 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 49:
+			if (N.num1 > 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 50:
+			if (N.num1 < 0) {
+				Register[34] = N.num;
+				//conLock = 1;
+			}
+			conLock = 0;
+			break;
+		case 51: case 52:
+			Register[34] = N.num;
+			conLock = 0;
+			//conLock = 1;
+			break;
+		case 53: case 54:
+			//Register[31] = currentLine + 1;
+			M.ans = N.num1;
+			Register[34] = N.num2;
+			conLock = 0;
+			//conLock = 1;
+			break;
+		case 55:
+			//Register[p.Rdest] = p.Scr;
+			M.ans = N.num;
+			break;
+		case 56: case 57: case 58: case 59:
+			if (N.type == 6) {
+				M.ans = N.num1 + N.num2;
+			}
+			else {
+				M.ans = N.num;
+			}
+			//Register[p.Rdest] = M.ans;
+			break;
+		default:
+			break;
 		}
-		clearN();
+	}
+	clearN();
 }
 void MA() {
-		R.Command = M.Command;
-		R.ans = M.ans;
-		R.ans1 = M.ans1;
-		R.ans2 = M.ans2;
-		R.type = M.type;
-		R.pos = M.Rdest;
-		if (M.Command == 0)
-			return;
-		if (mainbegin) {
-			switch (M.Command) {
-			case 30:
-				memo.save(M.ans, 1, M.pos);
-				memLock = 1;
-				break;
-			case 31:
-				memo.save(M.ans, 2, M.pos);
-				memLock = 1;
-				break;
-			case 32:
-				memo.save(M.ans, 4, M.pos);
-				memLock = 1;
-				break;
-			case 37:
-				if (Register[2] == 4)
-					memo.print(M.pos);
-				else if (Register[2] == 8)
-					memo.saveString(Str, M.pos, M.ans);
-				else if (Register[2] == 9)
-					R.ans = memo.space(M.pos);
-				memLock = 1;
-				break;
-			case 57:
-				R.ans = memo.readByte(M.ans);
-				memLock = 1;
-				break;
-			case 58:
-				R.ans = memo.readHalf(M.ans);
-				memLock = 1;
-				break;
-			case 59:
-				R.ans = memo.readWord(M.ans);
-				memLock = 1;
-				break;
-			default:
-				break;
-			}
+	R.Command = M.Command;
+	R.ans = M.ans;
+	R.ans1 = M.ans1;
+	R.ans2 = M.ans2;
+	R.type = M.type;
+	R.pos = M.Rdest;
+	if (M.Command == 0)
+		return;
+	if (mainbegin) {
+		switch (M.Command) {
+		case 30:
+			memo.save(M.ans, 1, M.pos);
+			memLock = 1;
+			break;
+		case 31:
+			memo.save(M.ans, 2, M.pos);
+			memLock = 1;
+			break;
+		case 32:
+			memo.save(M.ans, 4, M.pos);
+			memLock = 1;
+			break;
+		case 37:
+			if (Register[2] == 4)
+				memo.print(M.pos);
+			else if (Register[2] == 8)
+				memo.saveString(Str, M.pos, M.ans);
+			else if (Register[2] == 9)
+				R.ans = memo.space(M.pos);
+			memLock = 1;
+			break;
+		case 57:
+			R.ans = memo.readByte(M.ans);
+			memLock = 1;
+			break;
+		case 58:
+			R.ans = memo.readHalf(M.ans);
+			memLock = 1;
+			break;
+		case 59:
+			R.ans = memo.readWord(M.ans);
+			memLock = 1;
+			break;
+		default:
+			break;
 		}
-		clearM();
+	}
+	clearM();
 }
 
-void WB(){
+void WB() {
 	if (mainbegin) {
 		if (R.Command == 0)
 			return;
@@ -933,10 +932,10 @@ void WB(){
 		dataLock = 0;
 		clearR();
 	}
-//    std::cout << "cycle" << Register[34] << std::endl;
-//    for (int i = 0; i < 35; ++i)
-//        std::cout << Register[i] << ' ';
-//    std::cout << std::endl;
+	//    std::cout << "cycle" << Register[34] << std::endl;
+	//    for (int i = 0; i < 35; ++i)
+	//        std::cout << Register[i] << ' ';
+	//    std::cout << std::endl;
 }
 
 void processData() {
